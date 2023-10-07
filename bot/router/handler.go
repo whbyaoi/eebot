@@ -1,0 +1,91 @@
+package router
+
+import (
+	"eebot/bot/model"
+	"eebot/bot/router/message"
+	"eebot/g"
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+func WsMessageHandler(b []byte) {
+	var m map[string]interface{}
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		g.Logger.Errorf("Unmarshal to map[string]interface{} 错误")
+		return
+	}
+
+	// 应该是确认返回消息
+	if _, ok := m["post_type"]; !ok {
+		return
+	}
+	postType, ok := m["post_type"].(string)
+	if !ok {
+		g.Logger.Errorf("ws消息格式错误：post_type 字段值无法转换为string类型")
+		return
+	}
+
+	switch postType {
+	// 暂时只处理message消息
+	case "message":
+		err = messageHandler(b)
+	default:
+	}
+
+	if err != nil {
+		g.Logger.Errorf("处理消息 %s 时错误：%s", FormatJson(m, false), err.Error())
+	}
+}
+
+func messageHandler(b []byte) (err error) {
+	var messageBase model.MessageBase
+	err = json.Unmarshal(b, &messageBase)
+	if err != nil {
+		return err
+	}
+
+	if messageBase.MessageType == "group" {
+		if !isAtMe(messageBase.RawMessage, messageBase.SelfID) {
+			return
+		}
+		var groupMessage model.GroupMessage
+		err = json.Unmarshal(b, &groupMessage)
+		if err != nil {
+			return err
+		}
+		g.Logger.Printf("收到 %d 群聊消息：%s", groupMessage.GroupID, groupMessage.RawMessage)
+		err = message.GroupMessageHub(groupMessage)
+
+	} else {
+		var privateMessage model.PrivateMessage
+		err = json.Unmarshal(b, &privateMessage)
+		if err != nil {
+			return err
+		}
+		g.Logger.Printf("收到 %d 私聊消息：%s", privateMessage.UserID, privateMessage.RawMessage)
+		err = message.PrivateMessageHub(privateMessage)
+	}
+
+	return
+}
+
+func isAtMe(rawMessage string, qq int64) bool {
+	return strings.HasPrefix(rawMessage, fmt.Sprintf("[CQ:at,qq=%d]", qq))
+}
+
+// FormatJson 格式化Json以便更容器查看, 如果m格式错误则返回空字符串
+func FormatJson(m interface{}, indent bool) string {
+	var b []byte
+	var err error
+	if !indent {
+		b, err = json.Marshal(m)
+	} else {
+		b, err = json.MarshalIndent(m, "", "  ")
+	}
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
