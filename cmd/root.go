@@ -23,6 +23,7 @@ func init() {
 
 	rootCmd.AddCommand(Analysis300Cmd)
 	rootCmd.AddCommand(CollectDataCmd)
+	rootCmd.AddCommand(RefreshIntervalCmd)
 }
 
 func Execute() error {
