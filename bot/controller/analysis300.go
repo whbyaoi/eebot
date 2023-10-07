@@ -15,7 +15,7 @@ import (
 //	rawMessageSlice[0]: 300
 //	rawMessageSlice[1]: 指令缩写
 //	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 团分下限)
-func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err error) {
+func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
 	var svc string
 	var name string
 	if len(rawMessageSlice) > 1 {
@@ -32,10 +32,10 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err er
 	}
 
 	if svc != "h" && svc != "help" && svc != "帮助" && svc != "gh" {
-		go service.Reply("别急，查询角色中", prefix, sourceID)
+		go service.Reply("别急，查询角色中", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
-			err = service.Reply(err.Error(), prefix, sourceID)
+			err = service.Reply(err.Error(), prefix, targetID)
 			return
 		}
 	}
@@ -93,22 +93,21 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err er
 		}
 		suffix += tmp
 	case "help": // 帮助
-		suffix += "所有指令一览：\n"
-		suffix += "n --- 胜负分析\n"
-		suffix += "t --- 开黑分析\n"
-		suffix += "s  --- 洗牌分析\n"
-		suffix += "l  --- 常用分析\n"
-		suffix += "h 英雄名称 [可选]团分下限 - 英雄分析\n"
-		suffix += "gh 英雄名称 - 全局英雄分析\n"
-		suffix += "本项目github: github.com/whbyaoi/eebot"
+		suffix += "指令一览(详见个人空间)：\n"
+		suffix += "n 玩家 --- 胜负分析\n"
+		suffix += "t 玩家 --- 开黑分析\n"
+		suffix += "s 玩家 --- 洗牌分析\n"
+		suffix += "l 玩家 --- 常用分析\n"
+		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
+		suffix += "gh 玩家 英雄名称 - 全局英雄分析\n"
 	default:
 		suffix = "未知指令"
 	}
 
 	if err == nil {
-		err = service.Reply(suffix, prefix, sourceID)
+		err = service.Reply(suffix, prefix, targetID)
 	} else {
-		err = service.Reply(err.Error(), prefix, sourceID)
+		err = service.Reply(err.Error(), prefix, targetID)
 	}
 	return
 }

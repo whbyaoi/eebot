@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"eebot/bot/router"
+	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"eebot/ws"
@@ -26,5 +27,25 @@ var Analysis300Cmd = &cobra.Command{
 			ws.WsClient.Close()
 			time.Sleep(time.Minute)
 		}
+	},
+}
+
+var CollectDataCmd = &cobra.Command{
+	Use:   "300-collect",
+	Short: "collect 300 data via redis keys (may block 300 bot service)",
+	Run: func(cmd *cobra.Command, args []string) {
+		collect.InitRedis()
+		db.InitMysql()
+		collect.UpdateMatchAndPlayer()
+	},
+}
+
+var RefreshIntervalCmd = &cobra.Command{
+	Use:   "300-refresh-interval",
+	Short: "refresh intervals of players for shuffle anslysis (may block 300 bot service)",
+	Run: func(cmd *cobra.Command, args []string) {
+		collect.InitRedis()
+		db.InitMysql()
+		analysis.InitMatchInterval()
 	},
 }
