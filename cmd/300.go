@@ -28,3 +28,13 @@ var Analysis300Cmd = &cobra.Command{
 		}
 	},
 }
+
+var CollectDataCmd = &cobra.Command{
+	Use:   "300-collect",
+	Short: "collect 300 data via redis keys (may block 300 bot service)",
+	Run: func(cmd *cobra.Command, args []string) {
+		collect.InitRedis()
+		db.InitMysql()
+		collect.UpdateMatchAndPlayer()
+	},
+}

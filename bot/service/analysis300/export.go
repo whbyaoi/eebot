@@ -212,9 +212,9 @@ func ExportShuffleAnalysis(name string) (msg string, err error) {
 		return
 	}
 	avg, than10min, total := analysis.ShuffleAnalysis(PlayerID)
-	rank, _ := analysis.GetMatchInterval(PlayerID)
+	rank, total2 := analysis.GetMatchInterval(PlayerID)
 
-	msg += fmt.Sprintf("洗牌分析，昵称：%s\n", name)
+	msg += fmt.Sprintf("洗牌分析（仅供参考，总计%d人），昵称：%s\n", total2[0], name)
 	msg += fmt.Sprintf("有效间隔数：%d，平均间隔：%d秒(%.1f%%)，超过十分钟的间隔数：%d (占比%.1f%%，%.1f%%)", total, avg, rank[0], than10min, print.Divide(uint64(than10min), uint64(total))*100, rank[1])
 	return
 }

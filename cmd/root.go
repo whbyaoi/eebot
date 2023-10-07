@@ -11,7 +11,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "eebot",
 	Short: "run bot",
 }
 
@@ -22,6 +22,7 @@ func init() {
 	rootCmd.MarkPersistentFlagRequired("config")
 
 	rootCmd.AddCommand(Analysis300Cmd)
+	rootCmd.AddCommand(CollectDataCmd)
 }
 
 func Execute() error {
