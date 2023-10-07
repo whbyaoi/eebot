@@ -15,7 +15,7 @@ import (
 //	rawMessageSlice[0]: 300
 //	rawMessageSlice[1]: 指令缩写
 //	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 团分下限)
-func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err error) {
+func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
 	var svc string
 	var name string
 	if len(rawMessageSlice) > 1 {
@@ -32,10 +32,10 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err er
 	}
 
 	if svc != "h" && svc != "help" && svc != "帮助" && svc != "gh" {
-		go service.Reply("别急，查询角色中", prefix, sourceID)
+		go service.Reply("别急，查询角色中", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
-			err = service.Reply(err.Error(), prefix, sourceID)
+			err = service.Reply(err.Error(), prefix, targetID)
 			return
 		}
 	}
@@ -106,9 +106,9 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64) (err er
 	}
 
 	if err == nil {
-		err = service.Reply(suffix, prefix, sourceID)
+		err = service.Reply(suffix, prefix, targetID)
 	} else {
-		err = service.Reply(err.Error(), prefix, sourceID)
+		err = service.Reply(err.Error(), prefix, targetID)
 	}
 	return
 }

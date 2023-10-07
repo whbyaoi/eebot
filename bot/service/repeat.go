@@ -17,7 +17,7 @@ func Reply(msg string, prefix string, id int64) error {
 			Action: "send_group_msg",
 			Params: model.GroupMessageParams{
 				GroupID:    id,
-				Message:    msg,
+				Message:    prefix + msg,
 				AutoEscape: false,
 			},
 		}

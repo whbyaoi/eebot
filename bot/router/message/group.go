@@ -16,7 +16,7 @@ func GroupMessageHub(gm model.GroupMessage) (err error) {
 	case "复读机", "repeat":
 		err = controller.Repeat(gm)
 	case "300":
-		err = controller.AnalysisHub(slices[1:], true, gm.GroupID)
+		err = controller.AnalysisHub(slices[1:], true, gm.UserID, gm.GroupID)
 	default:
 		// 无视错误消息
 	}
