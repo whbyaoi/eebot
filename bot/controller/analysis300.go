@@ -101,7 +101,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "gh 玩家 英雄名称 - 全局英雄分析\n"
 	default:
-		suffix = "未知指令"
+		suffix = "未知指令：" + svc
 	}
 
 	if err == nil {

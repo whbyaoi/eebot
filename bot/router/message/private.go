@@ -8,7 +8,7 @@ import (
 
 func PrivateMessageHub(pm model.PrivateMessage) (err error) {
 	var action string
-	slices := strings.Split(pm.RawMessage, " ")
+	slices := strings.Split(CutSpace(pm.RawMessage), " ")
 	if len(slices) > 0 {
 		action = slices[0]
 	}
@@ -22,3 +22,4 @@ func PrivateMessageHub(pm model.PrivateMessage) (err error) {
 
 	return
 }
+

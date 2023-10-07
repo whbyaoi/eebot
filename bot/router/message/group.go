@@ -8,7 +8,7 @@ import (
 
 func GroupMessageHub(gm model.GroupMessage) (err error) {
 	var action string
-	slices := strings.Split(gm.RawMessage, " ")
+	slices := strings.Split(CutSpace(gm.RawMessage), " ")
 	if len(slices) > 1 {
 		action = slices[1]
 	}
@@ -22,4 +22,12 @@ func GroupMessageHub(gm model.GroupMessage) (err error) {
 	}
 
 	return
+}
+
+// CutSpace 替换多余的空格
+func CutSpace(raw string) string {
+	for strings.Contains(raw, "  ") {
+		raw = strings.ReplaceAll(raw, "  ", " ")
+	}
+	return raw
 }
