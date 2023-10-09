@@ -205,7 +205,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		} else if flag == 2 {
 			a3++
 			if rs[i][2] == 1 {
-				w2++
+				w3++
 			}
 		}
 
