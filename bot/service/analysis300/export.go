@@ -78,7 +78,7 @@ func ExportWinOrLoseAnalysis(name string) (msg string, err error) {
 		return
 	}
 
-	rs, diff, fvRange, fvNow := analysis.WinOrLoseAnalysis(PlayerID)
+	rs, diff, _, fvRange, fvNow := analysis.WinOrLoseAnalysis(PlayerID)
 	win := 0
 	lose := 0
 	cnt1 := 0
@@ -135,7 +135,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		return
 	}
 
-	rs, diff, fvRange, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	rs, diff, svd, fvRange, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
 	win := 0
 	lose := 0
 	cnt1 := 0
@@ -171,6 +171,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	msg += fmt.Sprintf("%d 负场中有 %d 场(%.1f%%)的己方均分低于对面\n", lose, cnt2, float32(cnt2)/float32(lose)*100)
 	msg += fmt.Sprintf("玩家分相对场均分水平：%d\n", diff)
 	msg += fmt.Sprintf("己方均分相对敌方均分水平：%d\n", diff2)
+	msg += fmt.Sprintf("己方团分离散度相对敌方团分离散度水平：%d\n", svd)
 
 	stage1 := print.ExtractByFVAdvanced(1000, 1500, rs)
 	stage2 := print.ExtractByFVAdvanced(1500, 1700, rs)
@@ -187,21 +188,31 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "2000-2500", tran2(stage6), tran(stage6))
 
 	var a1, a2, a3 uint64 = 0, 0, 0
+	var w1, w2, w3 uint64 = 0, 0, 0
 	for i := range rs {
 		avg := (rs[i][0] + rs[i][1]) / 2
 		flag := print.IsSameRange(avg, rs[i][3])
 		if flag == 0 {
 			a1++
+			if rs[i][2] == 1 {
+				w1++
+			}
 		} else if flag == 1 {
 			a2++
+			if rs[i][2] == 1 {
+				w2++
+			}
 		} else if flag == 2 {
 			a3++
+			if rs[i][2] == 1 {
+				w2++
+			}
 		}
 
 	}
-	msg += fmt.Sprintf("进入杀鸡局场次：%d(%.1f%%)\n", a1, print.Divide(a1, uint64(len(rs)))*100)
-	msg += fmt.Sprintf("进入本地局场次：%d(%.1f%%)\n", a2, print.Divide(a2, uint64(len(rs)))*100)
-	msg += fmt.Sprintf("进入壮丁局场次：%d(%.1f%%)\n", a3, print.Divide(a3, uint64(len(rs)))*100)
+	msg += fmt.Sprintf("进入杀鸡局场次(%.1f%%)：%.1f%% / %d\n", print.Divide(a1, uint64(len(rs)))*100, print.Divide(w1, a1)*100, a1)
+	msg += fmt.Sprintf("进入本地局场次(%.1f%%)：%.1f%% / %d\n", print.Divide(a2, uint64(len(rs)))*100, print.Divide(w2, a2)*100, a2)
+	msg += fmt.Sprintf("进入壮丁局场次(%.1f%%)：%.1f%% / %d\n", print.Divide(a3, uint64(len(rs)))*100, print.Divide(w3, a3)*100, a3)
 
 	return
 }

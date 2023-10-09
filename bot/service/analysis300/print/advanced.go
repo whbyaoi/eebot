@@ -67,7 +67,7 @@ func PrintTeamAnalysisAdvanced(PlayerID uint64) {
 }
 
 func PrintWinOrLoseAnalysisAdvanced(PlayerID uint64) {
-	rs, diff, fvRange, fvNow, _ := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	rs, diff, _, fvRange, fvNow, _ := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
 
 	win := 0
 	lose := 0

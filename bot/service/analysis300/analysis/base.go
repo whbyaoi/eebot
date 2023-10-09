@@ -3,6 +3,7 @@ package analysis
 import (
 	"eebot/bot/service/analysis300/db"
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -16,8 +17,9 @@ var PlayerListKey = "300analysis:player_list"
 //			- result[*][2] -- 输赢，1=赢，2=输
 //
 //			diff    相对均分偏移
+//			diff2   相对均分离散
 //			fvRange 竞技力范围
-func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, fvRange [2]int, fvNow int) {
+func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, fvRange [2]int, fvNow int) {
 	matchIds, sides := getMatchIdsAndSides(PlayerID)
 
 	fvRange[0] = 2500
@@ -57,9 +59,24 @@ func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, fvRange [2]i
 
 		diff += selfFV - (tmp[0]+tmp[1])/2
 		result = append(result, tmp)
+
+		// 计算标准差
+		_svd1 := 0
+		_svd2 := 0
+		for j := range localPlayers {
+			if localPlayers[j].Side == sides[i] {
+				_svd1 += (localPlayers[j].FV - tmp[0]) * (localPlayers[j].FV - tmp[0])
+			} else {
+				_svd2 += (localPlayers[j].FV - tmp[1]) * (localPlayers[j].FV - tmp[1])
+			}
+		}
+		_svd1 = int(math.Sqrt(float64(_svd1) / 6))
+		_svd2 = int(math.Sqrt(float64(_svd2) / 6))
+		diff2 += _svd1 - _svd2
 	}
 	if len(matchIds) != 0 {
 		diff /= len(matchIds)
+		diff2 /= len(matchIds)
 	}
 	return
 }

@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"eebot/bot/service/analysis300/db"
+	"math"
 	"sort"
 	"time"
 )
@@ -168,7 +169,7 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 //	result[1]: 敌方均分
 //	result[2]: 输赢 1-赢，2-输
 //	result[3]: 自己团分
-func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, fvRange [2]int, fvNow int, timeRange [2]uint64) {
+func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, diff2 int, fvRange [2]int, fvNow int, timeRange [2]uint64) {
 	matchIds, sides := getMatchIdsAndSides(PlayerID)
 
 	fvRange[0] = 2500
@@ -212,9 +213,24 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, fvRa
 
 		diff += selfFV - (tmp[0]+tmp[1])/2
 		result = append(result, tmp)
+
+		// 计算标准差
+		_svd1 := 0
+		_svd2 := 0
+		for j := range localPlayers {
+			if localPlayers[j].Side == sides[i] {
+				_svd1 += (localPlayers[j].FV - tmp[0]) * (localPlayers[j].FV - tmp[0])
+			} else {
+				_svd2 += (localPlayers[j].FV - tmp[1]) * (localPlayers[j].FV - tmp[1])
+			}
+		}
+		_svd1 = int(math.Sqrt(float64(_svd1) / 6))
+		_svd2 = int(math.Sqrt(float64(_svd2) / 6))
+		diff2 += _svd1 - _svd2
 	}
 	if len(matchIds) != 0 {
 		diff /= len(matchIds)
+		diff2 /= len(matchIds)
 	}
 	return
 }
