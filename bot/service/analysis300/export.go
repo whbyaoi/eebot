@@ -205,7 +205,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		} else if flag == 2 {
 			a3++
 			if rs[i][2] == 1 {
-				w2++
+				w3++
 			}
 		}
 
@@ -294,7 +294,7 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 	}
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[hero], fv)
 	rs, total := analysis.HeroAnalysis(PlayerID, fv)
-	rank, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
+	rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
 	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d\n", name, total)
 	for i := range rs {
 		if db.HeroIDToName[int(rs[i][0])] != hero {
@@ -323,6 +323,7 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 		msg += fmt.Sprintf("场均每分承伤：%.1f (%.1f%%)\n", rs[i][24], rank[24])
 		msg += fmt.Sprintf("场均承伤占比：%.1f%% (%.1f%%)\n", rs[i][25]*100, rank[25])
 		msg += fmt.Sprintf("场均经济转换率：%.1f%% (%.1f%%)\n", rs[i][26], rank[26])
+		msg += fmt.Sprintf("综合评分：%d (%.1f%%)\n", overallScore, rank[28])
 	}
 	return
 }
