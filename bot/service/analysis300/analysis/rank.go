@@ -77,7 +77,7 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 		for i, factor := range factors {
 			overallScore += rank[i] * factor
 		}
-		overallScore = overallScore * (0.95 + rank[0]/100*0.05) * (0.95 + rank[1]/100*0.05)
+		overallScore = overallScore * (0.9 + min(data[id]["total"]-ValidTimes, 10)/10*0.1) * (0.9 + rank[1]/100*0.1)
 		key := prefix + HeroDataToName[28]
 		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
 	}

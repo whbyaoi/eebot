@@ -10,11 +10,11 @@ factor 分为三个档次
 0.6: 很重要
 
 除外
-场次(total) 特殊处理，综合评分最终会乘一个和场次对应的权重
+场次(total) 特殊处理，综合评分最终会乘一个和 场次置位(total_rank) 对应的权重
 factor_total = 0.95 + 0.05 * total_rank
 
 胜率(win) 特殊处理，综合评分最终会乘一个和 胜率置位(win_rank) 对应的权重
-factor_win = 0.95 + 0.05 * win_rank
+factor_win = 0.90 + 0.1 * win_rank
 */
 
 type DataWeight map[int]float64
@@ -24,7 +24,7 @@ type HeroTypeWeight [5]float64
 
 // 权重
 var (
-	a = 0.6 
+	a = 0.6
 	b = 0.3
 	c = 0.1
 )
