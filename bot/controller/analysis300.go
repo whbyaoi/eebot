@@ -32,7 +32,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	}
 
 	if svc != "help" && svc != "帮助" && svc != "g" && svc != "top" {
-		go service.Reply("别急，查询角色中", prefix, targetID)
+		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
 			err = service.Reply(err.Error(), prefix, targetID)
