@@ -31,7 +31,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		prefix = fmt.Sprintf("[CQ:at,qq=%d] \n", sourceID)
 	}
 
-	if svc != "h" && svc != "help" && svc != "帮助" && svc != "gh" {
+	if svc != "help" && svc != "帮助" && svc != "g" && svc != "top" {
 		go service.Reply("别急，查询角色中", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
@@ -69,10 +69,19 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			suffix, err = analysis300.ExportAssignHeroAnalysisAdvanced(name, assgin, fv)
 		}
-	case "gh": // 全局英雄
+	case "g": // 全局英雄
 		suffix, err = analysis300.ExportGlobalHeroAnalysis(name, 0)
 	case "l": // 常用
 		suffix, err = analysis300.ExportLikeAnalysis(name)
+	case "top": // top10
+		var fv int
+		if len(rawMessageSlice) > 3 {
+			fv, err = strconv.Atoi(rawMessageSlice[3])
+			if err != nil {
+				break
+			}
+		}
+		suffix, err = analysis300.ExportTopAnalysis(name, fv)
 	case "all": // 全部
 		if !HasAuth(sourceID) {
 			err = errors.New("无权使用该指令")
@@ -99,7 +108,8 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "s 玩家 --- 洗牌分析\n"
 		suffix += "l 玩家 --- 常用分析\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
-		suffix += "gh 玩家 英雄名称 - 全局英雄分析\n"
+		suffix += "gh 英雄名称 - 全局英雄分析\n"
+		suffix += "top 英雄名称 [可选]团分下限 - 高手前10"
 	default:
 		suffix = "未知指令：" + svc
 	}

@@ -123,6 +123,7 @@ func beginCrawl(PlayerID uint64) (ids []interface{}) {
 			}
 			// 保存比赛和玩家记录
 			db.SqlDB.Session(&gorm.Session{FullSaveAssociations: true}).Save(&matchInfo)
+			
 		}
 	}
 	return

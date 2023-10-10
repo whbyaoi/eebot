@@ -70,10 +70,14 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	}
 
 	// 计算综合水平
-	// 综合水平 = 100 * (win + avg_kill_per_minute + avg_assist_per_minute - avg_death_per_minute + avg_tower_per_minute + avg_put_eye_per_minute + avg_destroy_eye_per_minute + avg_make_damage_per_minute + avg_take_damage_per_minute + avg_money_conversion_rate)
+	factors := MergeImportance(HeroNameToID[db.HeroIDToName[HeroID]])
 	for id := range data {
 		rank, _ := GetHeroOfPlayerRankWithoutOverallScore(HeroID, id, fv)
-		overallScore := rank[2] + rank[6] + rank[10] - rank[8] + rank[12] + rank[14] + rank[16] + rank[21] + rank[24] + rank[26]
+		overallScore := 0.0
+		for i, factor := range factors {
+			overallScore += rank[i] * factor
+		}
+		overallScore = overallScore * (0.95 + rank[0]/100*0.05) * (0.95 + rank[1]/100*0.05)
 		key := prefix + HeroDataToName[28]
 		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
 	}
@@ -208,6 +212,15 @@ func GetHeroOfPlayerRankWithoutOverallScore(HeroID int, PlayerID uint64, fv int)
 		pos, _ := collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 		rank[index] = float64(pos) / float64(total-1) * 100
 	}
+	return
+}
+
+// GetTopRank 获取某英雄综合评分前10
+func GetTopRank(HeroID int, fv int) (result []redis.Z, total int64, err error) {
+	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
+	key := prefix + HeroDataToName[28]
+	result, err = collect.RDB.ZRevRangeWithScores(collect.Ctx, key, 0, 9).Result()
+	total, _ = collect.RDB.ZCard(collect.Ctx, key).Result()
 	return
 }
 

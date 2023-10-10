@@ -574,3 +574,4 @@ var HeroNameToID = map[string]int{
 	"歌姬":        189,
 	"苍星石":       313,
 }
+

@@ -7,6 +7,7 @@ import (
 	"eebot/bot/service/analysis300/print"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -454,5 +455,21 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1800-1900", print.Divide(uint64(range3), uint64(all))*100, range3, print.Divide(uint64(win3), uint64(range3))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1900-2000", print.Divide(uint64(range4), uint64(all))*100, range4, print.Divide(uint64(win4), uint64(range4))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "2000-2500", print.Divide(uint64(range5), uint64(all))*100, range5, print.Divide(uint64(win5), uint64(range5))*100)
+	return
+}
+
+func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
+	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[HeroName], fv)
+	result, total, err := analysis.GetTopRank(db.HeroNameToID[HeroName], fv)
+	if err != nil {
+		return
+	}
+
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d\n", HeroName, fv, total)
+	for i := range result {
+		idStr := result[i].Member.(string)
+		id, _ := strconv.ParseUint(idStr, 10, 64)
+		msg += fmt.Sprintf("%d、昵称：%s，评分：%.1f\n", i+1, collect.SearchName(id), result[i].Score)
+	}
 	return
 }
