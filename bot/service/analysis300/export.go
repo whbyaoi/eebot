@@ -224,10 +224,10 @@ func ExportShuffleAnalysis(name string) (msg string, err error) {
 		return
 	}
 	avg, than10min, total := analysis.ShuffleAnalysis(PlayerID)
-	rank, total2 := analysis.GetMatchInterval(PlayerID)
+	// rank, total2 := analysis.GetMatchInterval(PlayerID)
 
-	msg += fmt.Sprintf("洗牌分析（仅供参考，总计%d人），昵称：%s\n", total2[0], name)
-	msg += fmt.Sprintf("有效间隔数：%d，平均间隔：%d秒(%.1f%%)，超过十分钟的间隔数：%d (占比%.1f%%，%.1f%%)", total, avg, rank[0], than10min, print.Divide(uint64(than10min), uint64(total))*100, rank[1])
+	msg += fmt.Sprintf("洗牌分析，昵称：%s\n", name)
+	msg += fmt.Sprintf("有效间隔数：%d，平均间隔：%d秒，超过十分钟的间隔数：%d (占比%.1f%%)", total, avg, than10min, print.Divide(uint64(than10min), uint64(total))*100)
 	return
 }
 
@@ -274,8 +274,8 @@ func ExportHeroAnalysis(name string) (msg string, err error) {
 		msg += fmt.Sprintf("场均/场均每分补刀：%.1f / %.1f\n", rs[i][3], rs[i][4])
 		msg += fmt.Sprintf("场均kda：%.1f / %.1f / %.1f\n", rs[i][5], rs[i][7], rs[i][9])
 		msg += fmt.Sprintf("场均每分kda：%.2f / %.2f / %.2f\n", rs[i][6], rs[i][8], rs[i][10])
-		msg += fmt.Sprintf("场均/场均每分推塔：%.1f / %.1f\n", rs[i][11], rs[i][12])
-		msg += fmt.Sprintf("场均插/排眼：%.1f / %.1f\n", rs[i][13], rs[i][15])
+		msg += fmt.Sprintf("场均/场均每分推塔：%.2f / %.2f\n", rs[i][11], rs[i][12])
+		msg += fmt.Sprintf("场均插/排眼：%.2f / %.2f\n", rs[i][13], rs[i][15])
 		msg += fmt.Sprintf("场均每分插/排眼：%.2f / %.2f\n", rs[i][14], rs[i][16])
 		msg += fmt.Sprintf("场均/场均每分经济：%.1f / %.1f\n", rs[i][17], rs[i][18])
 		msg += fmt.Sprintf("场均经济占比：%.1f%%\n", rs[i][19]*100)
@@ -312,8 +312,8 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 		msg += fmt.Sprintf("场均每分kda：%.2f (%.1f%%) / %.2f (%.1f%%) / %.2f (%.1f%%)\n", rs[i][6], rank[6], rs[i][8], rank[8], rs[i][10], rank[10])
 		msg += fmt.Sprintf("场均推塔：%.1f (%.1f%%)\n", rs[i][11], rank[11])
 		msg += fmt.Sprintf("场均每分推塔：%.2f (%.1f%%)\n", rs[i][12], rank[12])
-		msg += fmt.Sprintf("场均插/排眼：%.1f (%.1f%%) / %.1f (%.1f%%)\n", rs[i][13], rank[13], rs[i][15], rank[15])
-		msg += fmt.Sprintf("场均每分插/排眼：%.2f (%.1f%%) / %.2f (%.1f%%)\n", rs[i][14], rank[14], rs[i][16], rank[16])
+		msg += fmt.Sprintf("场均插/排眼：%.2f (%.1f%%) / %.2f (%.1f%%)\n", rs[i][13], rank[13], rs[i][15], rank[15])
+		msg += fmt.Sprintf("场均每分插/排眼：%.3f (%.1f%%) / %.3f (%.1f%%)\n", rs[i][14], rank[14], rs[i][16], rank[16])
 		msg += fmt.Sprintf("场均经济：%.1f (%.1f%%)\n", rs[i][17], rank[17])
 		msg += fmt.Sprintf("场均每分经济：%.1f (%.1f%%)\n", rs[i][18], rank[18])
 		msg += fmt.Sprintf("场均经济占比：%.1f%% (%.1f%%)\n", rs[i][19]*100, rank[19])

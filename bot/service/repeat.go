@@ -33,6 +33,5 @@ func Reply(msg string, prefix string, id int64) error {
 			},
 		}
 	}
-
 	return ws.Send(req)
 }
