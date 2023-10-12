@@ -376,7 +376,9 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		if i >= 10 {
 			break
 		}
-		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%\n", i+1, db.HeroIDToName[int(rs[i][0])], uint64(rs[i][1]), rs[i][2]/rs[i][1]*100)
+		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)
+		rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
+		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%d(%.1f%%)\n", i+1, db.HeroIDToName[int(rs[i][0])], uint64(rs[i][1]), rs[i][2]/rs[i][1]*100, overallScore, rank[28])
 	}
 	return
 }

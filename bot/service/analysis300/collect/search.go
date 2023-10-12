@@ -137,6 +137,11 @@ func SearchRoleID(name string) (RoleID uint64, err error) {
 }
 
 func SearchName(RoleID uint64) (Name string) {
+	defer func() {
+		if Name == "*******" {
+			Name = fmt.Sprintf("id:%d", RoleID)
+		}
+	}()
 	name, err := RDB.Get(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID)).Result()
 	if err == nil {
 		return name
