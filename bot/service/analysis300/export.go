@@ -46,7 +46,7 @@ func ExportTeamAnalysisAdvanced(name string) (msg string, err error) {
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d\n", name, total)
 	msg += fmt.Sprintln("队友情况：")
 	for i := range allies {
-		if i >= 5 {
+		if i >= 10 {
 			break
 		}
 		msg += fmt.Sprintf("%d、%s，作为队友场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(allies[i][0]), allies[i][2], print.Divide(allies[i][2], uint64(total))*100, print.Divide(allies[i][1], allies[i][2])*100)
