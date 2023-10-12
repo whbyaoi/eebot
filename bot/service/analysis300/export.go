@@ -42,22 +42,22 @@ func ExportTeamAnalysisAdvanced(name string) (msg string, err error) {
 	if err != nil {
 		return
 	}
-	allies, enermies, teams, teamAllies, total := analysis.TeamAnalysisAdvanced(PlayerID)
+	allies, _, teams, teamAllies, total := analysis.TeamAnalysisAdvanced(PlayerID)
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d\n", name, total)
 	msg += fmt.Sprintln("队友情况：")
 	for i := range allies {
-		if i >= 10 {
+		if i >= 5 {
 			break
 		}
 		msg += fmt.Sprintf("%d、%s，作为队友场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(allies[i][0]), allies[i][2], print.Divide(allies[i][2], uint64(total))*100, print.Divide(allies[i][1], allies[i][2])*100)
 	}
-	msg += fmt.Sprintln("对手情况：")
-	for i := range enermies {
-		if i >= 5 {
-			break
-		}
-		msg += fmt.Sprintf("%d、%s，作为对手场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(enermies[i][0]), enermies[i][2], print.Divide(enermies[i][2], uint64(total))*100, print.Divide(enermies[i][1], enermies[i][2])*100)
-	}
+	// msg += fmt.Sprintln("对手情况：")
+	// for i := range enermies {
+	// 	if i >= 5 {
+	// 		break
+	// 	}
+	// 	msg += fmt.Sprintf("%d、%s，作为对手场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(enermies[i][0]), enermies[i][2], print.Divide(enermies[i][2], uint64(total))*100, print.Divide(enermies[i][1], enermies[i][2])*100)
+	// }
 
 	var arr [4][]string
 	for k, v := range teamAllies {
@@ -373,7 +373,7 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 	rs, total := analysis.HeroAnalysis(PlayerID, 0)
 	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d\n", name, total)
 	for i := range rs {
-		if i >= 10 {
+		if i >= 5 {
 			break
 		}
 		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)

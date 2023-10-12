@@ -50,7 +50,7 @@ var HeroOfPlayerRankKey = "300analysis_hero_player_rank"
 // 存储时间间隔水平zset key值
 var MatchIntervalKey = "300analysis_shuffle"
 
-// UpdateHeroOfPlayerRank 按照玩家类别更新某个英雄数据水平
+// UpdateHeroOfPlayerRank 更新某个英雄数据水平
 func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	var players []db.Player
 	db.SqlDB.Model(db.Player{}).Where("hero_id = ?", HeroID).Find(&players)
