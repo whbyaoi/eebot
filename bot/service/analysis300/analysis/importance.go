@@ -78,7 +78,7 @@ var SupportImportance = DataWeight{
 var PokeImportance = DataWeight{
 	4:  b,  // 补刀
 	6:  a,  // k
-	8:  -a, // d
+	8:  -a*1.5, // d
 	10: a,  // a
 	12: c,  // 推塔
 	14: b,  // 插眼
@@ -93,7 +93,7 @@ var PokeImportance = DataWeight{
 var CarryImportance = DataWeight{
 	4:  a,  // 补刀
 	6:  a,  // k
-	8:  -a, // d
+	8:  -a*1.5, // d
 	10: a,  // a
 	12: a,  // 推塔
 	14: c,  // 插眼
