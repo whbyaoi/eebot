@@ -70,7 +70,11 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			suffix, err = analysis300.ExportAssignHeroAnalysisAdvanced(name, assgin, fv)
 		}
 	case "g": // 全局英雄
-		suffix, err = analysis300.ExportGlobalHeroAnalysis(name, 0)
+		if name == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportGlobalHeroAnalysis(name, 0)
+		}
 	case "l": // 常用
 		suffix, err = analysis300.ExportLikeAnalysis(name)
 	case "top": // top10
@@ -81,7 +85,11 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 				break
 			}
 		}
-		suffix, err = analysis300.ExportTopAnalysis(name, fv)
+		if name == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportTopAnalysis(name, fv)
+		}
 	case "all": // 全部
 		if !HasAuth(sourceID) {
 			err = errors.New("无权使用该指令")
@@ -108,7 +116,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "s 玩家 --- 洗牌分析\n"
 		suffix += "l 玩家 --- 常用分析\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
-		suffix += "gh 英雄名称 - 全局英雄分析\n"
+		suffix += "g 英雄名称 - 全局英雄分析\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 高手前10"
 	default:
 		suffix = "未知指令：" + svc

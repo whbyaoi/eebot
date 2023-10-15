@@ -101,6 +101,11 @@ A:
 }
 
 func SearchRoleID(name string) (RoleID uint64, err error) {
+	defer func() {
+		if err != nil && err.Error() == "error interface result" {
+			err = fmt.Errorf("不存在 %s 角色", name)
+		}
+	}()
 	values := url.Values{}
 	values.Set("AccountID", "0")
 	values.Set("Guid", "0")
