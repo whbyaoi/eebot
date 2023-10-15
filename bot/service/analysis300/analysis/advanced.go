@@ -169,7 +169,13 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 //	result[1]: 敌方均分
 //	result[2]: 输赢 1-赢，2-输
 //	result[3]: 自己团分
-func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, diff2 int, fvRange [2]int, fvNow int, timeRange [2]uint64) {
+//	result[4]: 局类型 0-杀鸡，1-本地，2-壮丁
+//	diff: 均分差
+//	svd: 离散度差
+//	fvRange: 团分范围
+//	fvNow: 目前团分
+//	timeRange: 时间范围
+func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd int, fvRange [2]int, fvNow int, timeRange [2]uint64) {
 	matchIds, sides := getMatchIdsAndSides(PlayerID)
 
 	fvRange[0] = 2500
@@ -185,7 +191,7 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, diff
 		var match db.Match
 		db.SqlDB.Model(&db.Match{}).Where("match_id = ?", matchIds[i]).Find(&match)
 
-		var tmp [4]int
+		var tmp [5]int
 		fvSum1 := 0 // 己方团分
 		fvSum2 := 0 // 对面团分
 		for j := range localPlayers {
@@ -212,7 +218,6 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, diff
 		tmp[3] = selfFV
 
 		diff += selfFV - (tmp[0]+tmp[1])/2
-		result = append(result, tmp)
 
 		// 计算标准差
 		_svd1 := 0
@@ -226,11 +231,52 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][4]int, diff int, diff
 		}
 		_svd1 = int(math.Sqrt(float64(_svd1) / 6))
 		_svd2 = int(math.Sqrt(float64(_svd2) / 6))
-		diff2 += _svd1 - _svd2
+		svd += _svd1 - _svd2
+
+		// 判断局类型
+		tmp[4] = 1
+		avg := (tmp[0] + tmp[1]) / 2
+		// 只要自己团分比均分低100，直接判断为壮丁局
+		if selfFV-avg < -100 {
+			tmp[4] = 2
+		}
+		// 自己团分比均分高100
+		// 找到对面有没有比自己高或者和自己团分相似的人，若没有，则是杀鸡
+		if selfFV-avg > 100 {
+			flag := false
+			for j := range localPlayers {
+				if localPlayers[j].PlayerID == PlayerID {
+					continue
+				}
+				if localPlayers[j].Side == sides[i] {
+					continue
+				} else {
+					if localPlayers[j].FV >= selfFV || IsSimilarFV(selfFV, localPlayers[j].FV) {
+						flag = true
+						break
+					}
+				}
+			}
+			if !flag {
+				tmp[4] = 0
+			}
+		}
+
+		result = append(result, tmp)
 	}
 	if len(matchIds) != 0 {
 		diff /= len(matchIds)
-		diff2 /= len(matchIds)
+		svd /= len(matchIds)
 	}
 	return
+}
+
+// IsSimilarFV 比较两个团分是否相似
+func IsSimilarFV(fv1, fv2 int) bool {
+	if fv1 >= 2100 && fv2 >= 2100 {
+		return true
+	} else if fv1-fv2 <= 50 && fv1-fv2 >= -50 {
+		return true
+	}
+	return false
 }

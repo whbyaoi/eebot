@@ -191,25 +191,22 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	var a1, a2, a3 uint64 = 0, 0, 0
 	var w1, w2, w3 uint64 = 0, 0, 0
 	for i := range rs {
-		avg := (rs[i][0] + rs[i][1]) / 2
-		flag := print.IsSameRange(avg, rs[i][3])
-		if flag == 0 {
+		if rs[i][4] == 0 {
 			a1++
 			if rs[i][2] == 1 {
 				w1++
 			}
-		} else if flag == 1 {
+		} else if rs[i][4] == 1 {
 			a2++
 			if rs[i][2] == 1 {
 				w2++
 			}
-		} else if flag == 2 {
+		} else if rs[i][4] == 2 {
 			a3++
 			if rs[i][2] == 1 {
 				w3++
 			}
 		}
-
 	}
 	msg += fmt.Sprintf("进入杀鸡局场次(%.1f%%)：%.1f%% / %d\n", print.Divide(a1, uint64(len(rs)))*100, print.Divide(w1, a1)*100, a1)
 	msg += fmt.Sprintf("进入本地局场次(%.1f%%)：%.1f%% / %d\n", print.Divide(a2, uint64(len(rs)))*100, print.Divide(w2, a2)*100, a2)

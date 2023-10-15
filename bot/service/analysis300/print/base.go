@@ -90,7 +90,7 @@ func ExtractByFV(start, end int, result [][3]int) (cnt [2]int) {
 	return
 }
 
-func ExtractByFVAdvanced(start, end int, result [][4]int) (cnt [2]int) {
+func ExtractByFVAdvanced(start, end int, result [][5]int) (cnt [2]int) {
 	for i := range result {
 		avg := (result[i][0] + result[i][1]) / 2
 		if start <= avg && avg < end {
