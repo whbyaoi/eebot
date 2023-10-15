@@ -47,7 +47,7 @@ func messageHandler(b []byte) (err error) {
 	}
 
 	if messageBase.MessageType == "group" {
-		if !isAtMe(messageBase.RawMessage, messageBase.SelfID) {
+		if !isAtMe(messageBase.RawMessage, messageBase.SelfID) || isDev() {
 			return
 		}
 		var groupMessage model.GroupMessage
@@ -73,6 +73,10 @@ func messageHandler(b []byte) (err error) {
 
 func isAtMe(rawMessage string, qq int64) bool {
 	return strings.HasPrefix(rawMessage, fmt.Sprintf("[CQ:at,qq=%d]", qq))
+}
+
+func isDev() bool {
+	return g.Config.GetBool("dev")
 }
 
 // FormatJson 格式化Json以便更容器查看, 如果m格式错误则返回空字符串
