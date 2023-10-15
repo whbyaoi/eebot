@@ -69,7 +69,7 @@ func beginCrawl(PlayerID uint64) (ids []interface{}) {
 				g.Logger.Errorf("index %d, %d match %s pass: %s", searchIndex, i, match.MatchID, err.Error())
 				continue
 			}
-			if len(matchInfo.Players) == 0 && matchInfo.MID != 254 {
+			if len(matchInfo.Players) == 0 || matchInfo.MID != 254 {
 				continue
 			}
 			var totalMoney1 int
