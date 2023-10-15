@@ -461,6 +461,10 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 }
 
 func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
+	if _, ok := db.HeroNameToID[HeroName]; !ok {
+		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
+	}
+
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[HeroName], fv)
 	result, total, err := analysis.GetTopRank(db.HeroNameToID[HeroName], fv)
 	if err != nil {
