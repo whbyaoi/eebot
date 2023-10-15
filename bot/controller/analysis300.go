@@ -61,7 +61,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		if len(rawMessageSlice) > 4 {
 			fv, err = strconv.Atoi(rawMessageSlice[4])
 			if err != nil {
-				break
+				fv = 0
 			}
 		}
 		if assgin == "" {
@@ -82,7 +82,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		if len(rawMessageSlice) > 3 {
 			fv, err = strconv.Atoi(rawMessageSlice[3])
 			if err != nil {
-				break
+				fv = 0
 			}
 		}
 		if name == "" {
