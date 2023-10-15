@@ -59,10 +59,12 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 	total = len(matchIds)
 	allyInfo := map[uint64][2]int{} // playerID -- [win, total]
 	enermyInfo := map[uint64][2]int{}
+	matchToPlayers := map[string][]db.Player{}
 	for i := range matchIds {
 		// 找到这局的玩家
 		var localPlayers []db.Player
 		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
+		matchToPlayers[matchIds[i]] = localPlayers
 
 		for j := range localPlayers {
 			if localPlayers[j].PlayerID == PlayerID {
@@ -125,10 +127,7 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 	}
 
 	teamAllies = make(map[int]map[string]struct{})
-	for i := range matchIds {
-		// 找到这局的玩家
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
+	for _, localPlayers := range matchToPlayers {
 
 		cnt := 0
 		var me db.Player
