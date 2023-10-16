@@ -137,6 +137,9 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	}
 
 	rs, diff, svd, fvRange, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	if len(rs) == 0 {
+		return "", errors.New("查询不到任何战绩")
+	}
 	win := 0
 	lose := 0
 	cnt1 := 0
