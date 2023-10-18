@@ -8,7 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 )
+
+var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
 // AnalysisHub
 //
@@ -30,6 +34,22 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	if isGroup {
 		prefix = fmt.Sprintf("[CQ:at,qq=%d] \n", sourceID)
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			service.Reply("未知错误", prefix, targetID)
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	if _, ok := mutexes[strings.Join(rawMessageSlice, "")]; !ok {
+		mutexes[strings.Join(rawMessageSlice, "")] = new(sync.Mutex)
+	}
+	excceed := mutexes[strings.Join(rawMessageSlice, "")].TryLock()
+	if !excceed {
+		service.Reply("已有重复的查询正在进行", prefix, targetID)
+		return
+	}
+	defer mutexes[strings.Join(rawMessageSlice, "")].Unlock()
 
 	if svc != "help" && svc != "帮助" && svc != "g" && svc != "top" {
 		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)

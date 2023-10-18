@@ -184,7 +184,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	stage5 := print.ExtractByFVAdvanced(1900, 2000, rs)
 	stage6 := print.ExtractByFVAdvanced(2000, 2500, rs)
 
-	msg += fmt.Sprintf("分段%s(%s)：%s (胜率 / 总场次，下同)\n", "1000-1500", tran2(stage1), tran(stage1))
+	msg += fmt.Sprintf("分段%s(%s)：%s (占比 / 胜率 / 总场次，下同)\n", "1000-1500", tran2(stage1), tran(stage1))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1500-1700", tran2(stage2), tran(stage2))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1700-1800", tran2(stage3), tran(stage3))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1800-1900", tran2(stage4), tran(stage4))

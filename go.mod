@@ -6,10 +6,11 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/redis/go-redis/v9 v9.1.0
 	github.com/sirupsen/logrus v1.9.3
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
+	golang.org/x/sync v0.1.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.4
-	github.com/spf13/cobra v1.7.0
 )
 
 require (
