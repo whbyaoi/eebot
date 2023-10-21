@@ -184,7 +184,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	stage5 := print.ExtractByFVAdvanced(1900, 2000, rs)
 	stage6 := print.ExtractByFVAdvanced(2000, 2500, rs)
 
-	msg += fmt.Sprintf("分段%s(%s)：%s (占比 / 胜率 / 总场次，下同)\n", "1000-1500", tran2(stage1), tran(stage1))
+	msg += fmt.Sprintf("分段%s(%s)：%s (占比 / 胜率 / 场次，下同)\n", "1000-1500", tran2(stage1), tran(stage1))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1500-1700", tran2(stage2), tran(stage2))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1700-1800", tran2(stage3), tran(stage3))
 	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1800-1900", tran2(stage4), tran(stage4))
@@ -451,7 +451,7 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 
 	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d, 出现次数：%d\n", HeroName, fv, all)
 	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", print.Divide(uint64(win), uint64(all))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%% (出场次数 / 比例 / 胜率，下同)\n", "1000-1500", print.Divide(uint64(range0), uint64(all))*100, range0, print.Divide(uint64(win0), uint64(range0))*100)
+	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%% (占比 / 场次 / 胜率，下同)\n", "1000-1500", print.Divide(uint64(range0), uint64(all))*100, range0, print.Divide(uint64(win0), uint64(range0))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1500-1700", print.Divide(uint64(range1), uint64(all))*100, range1, print.Divide(uint64(win1), uint64(range1))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1700-1800", print.Divide(uint64(range2), uint64(all))*100, range2, print.Divide(uint64(win2), uint64(range2))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1800-1900", print.Divide(uint64(range3), uint64(all))*100, range3, print.Divide(uint64(win3), uint64(range3))*100)
