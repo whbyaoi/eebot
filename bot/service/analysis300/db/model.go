@@ -5,6 +5,7 @@ type Player struct {
 	MatchID string
 
 	UsedTime             uint64  // 战绩所用时间
+	CreateTime           uint64  // 游戏结束时的时间戳
 	PlayerID             uint64  `json:"PlayerID"`    // 玩家id
 	Name                 string  `json:"RN"`          // 名称
 	AM                   []int   `json:"AM" gorm:"-"` // AwardMoney 8个一组，一组代表一分钟金钱的变化。其中 0 到 7 分别代表： 0-自然金钱增长，1-补刀，8-总

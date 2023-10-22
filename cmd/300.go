@@ -6,6 +6,7 @@ import (
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"eebot/ws"
+	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,5 +48,24 @@ var RefreshIntervalCmd = &cobra.Command{
 		collect.InitRedis()
 		db.InitMysql()
 		analysis.InitMatchInterval()
+	},
+}
+
+var AddTimestampCmd = &cobra.Command{
+	Use:   "300-add-timestamp",
+	Short: "add timestamp to table players (may block 300 bot service)",
+	Run: func(cmd *cobra.Command, args []string) {
+		collect.InitRedis()
+		db.InitMysql()
+
+		matches := []db.Match{}
+		db.SqlDB.Model(db.Match{}).Find(&matches)
+		fmt.Printf("total: %d\n", len(matches))
+		for i := range matches {
+			db.SqlDB.Model(db.Player{}).Where("match_id = ?", matches[i].MatchID).Update("create_time", matches[i].CreateTime)
+			if (i+1)%100 == 0 {
+				fmt.Printf("%d over\n", i+1)
+			}
+		}
 	},
 }

@@ -72,6 +72,7 @@ func updateCrawl(PlayerID uint64) (ids []interface{}) {
 				// 赋值游戏时间
 				matchInfo.Players[j].MatchID = matchInfo.MatchID
 				matchInfo.Players[j].UsedTime = matchInfo.UsedTime
+				matchInfo.Players[j].CreateTime = matchInfo.CreateTime
 
 				if matchInfo.Players[j].Side == 1 {
 					totalMoney1 += matchInfo.Players[j].TotalMoney
