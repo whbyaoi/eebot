@@ -85,7 +85,7 @@ func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, f
 //
 //	return:
 //		result[*][0] -- 英雄id
-//		result[*][1] -- 场次
+//		result[*][1] -- 计算场次
 //		result[*][2] -- 胜场
 //		result[*][3] -- 场均补刀
 //		result[*][4] -- 场均每分均刀
@@ -112,7 +112,8 @@ func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, f
 //		result[*][25] -- 场均承伤占比
 //		result[*][26] -- 场均转换率
 //		result[*][27] -- 场均耗时
-func HeroAnalysis(PlayerID uint64, fv int) (result [][28]float64, total uint64) {
+//		result[*][28] -- 总场次
+func HeroAnalysis(PlayerID uint64, fv int) (result [][29]float64, total uint64) {
 	var players []db.Player
 	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and fv >= ?", PlayerID, fv).Find(&players)
 	sort.Slice(players, func(i, j int) bool {
@@ -120,7 +121,8 @@ func HeroAnalysis(PlayerID uint64, fv int) (result [][28]float64, total uint64) 
 	})
 	total = uint64(len(players))
 
-	addValue := func(v [28]float64, me db.Player) [28]float64 {
+	addValue := func(v [29]float64, me db.Player) [29]float64 {
+		v[28]++
 		// 过滤低于阈值的战绩
 		if me.FV < fv {
 			return v
@@ -162,12 +164,12 @@ func HeroAnalysis(PlayerID uint64, fv int) (result [][28]float64, total uint64) 
 		return v
 	}
 
-	dataMap := make(map[int][28]float64)
+	dataMap := make(map[int][29]float64)
 	for _, me := range players {
 		if v, ok := dataMap[me.HeroID]; ok {
 			dataMap[me.HeroID] = addValue(v, me)
 		} else {
-			v := [28]float64{}
+			v := [29]float64{}
 			dataMap[me.HeroID] = addValue(v, me)
 		}
 	}
@@ -180,7 +182,7 @@ func HeroAnalysis(PlayerID uint64, fv int) (result [][28]float64, total uint64) 
 		result = append(result, data)
 	}
 
-	sort.Slice(result, func(i, j int) bool { return result[i][1] >= result[j][1] })
+	sort.Slice(result, func(i, j int) bool { return result[i][28] >= result[j][28] })
 	return
 }
 

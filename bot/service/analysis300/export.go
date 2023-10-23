@@ -256,37 +256,6 @@ func ExportShuffleAnalysisAdvanced(name string) (msg string, err error) {
 	return
 }
 
-func ExportHeroAnalysis(name string) (msg string, err error) {
-	PlayerID, err := collect.SearchRoleID(name)
-	if err != nil {
-		return
-	}
-	rs, total := analysis.HeroAnalysis(PlayerID, 0)
-	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d\n", name, total)
-	for i := range rs {
-		if i >= 1 {
-			break
-		}
-		msg += fmt.Sprintf("英雄：%s\n", db.HeroIDToName[int(rs[i][0])])
-		msg += fmt.Sprintf("场次：%d，%.1f%%\n", uint64(rs[i][1]), rs[i][1]/float64(total)*100)
-		msg += fmt.Sprintf("胜率：%.1f%%\n", rs[i][2]/rs[i][1]*100)
-		msg += fmt.Sprintf("场均耗时：%.1f 分\n", rs[i][27]/60)
-		msg += fmt.Sprintf("场均/场均每分补刀：%.1f / %.1f\n", rs[i][3], rs[i][4])
-		msg += fmt.Sprintf("场均kda：%.1f / %.1f / %.1f\n", rs[i][5], rs[i][7], rs[i][9])
-		msg += fmt.Sprintf("场均每分kda：%.2f / %.2f / %.2f\n", rs[i][6], rs[i][8], rs[i][10])
-		msg += fmt.Sprintf("场均/场均每分推塔：%.2f / %.2f\n", rs[i][11], rs[i][12])
-		msg += fmt.Sprintf("场均插/排眼：%.2f / %.2f\n", rs[i][13], rs[i][15])
-		msg += fmt.Sprintf("场均每分插/排眼：%.2f / %.2f\n", rs[i][14], rs[i][16])
-		msg += fmt.Sprintf("场均/场均每分经济：%.1f / %.1f\n", rs[i][17], rs[i][18])
-		msg += fmt.Sprintf("场均经济占比：%.1f%%\n", rs[i][19]*100)
-		msg += fmt.Sprintf("场均/场均每分输出：%.1f / %.1f\n", rs[i][20], rs[i][21])
-		msg += fmt.Sprintf("场均输出占比：%.1f%%\n", rs[i][22]*100)
-		msg += fmt.Sprintf("场均/场均每分承伤：%.1f / %.1f\n", rs[i][23], rs[i][24])
-		msg += fmt.Sprintf("场均承伤占比：%.1f%%\n", rs[i][25]*100)
-	}
-	return
-}
-
 // ExportAssignHeroAnalysisAdvanced 分析fv团分上的玩家的英雄数据
 func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
@@ -301,11 +270,9 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 		if db.HeroIDToName[int(rs[i][0])] != hero {
 			continue
 		}
-		var cnt int64
-		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ? and fv > ?", PlayerID, db.HeroNameToID[hero], fv).Count(&cnt)
 		msg += fmt.Sprintf("英雄：%s\n", hero)
 		msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total2, int(analysis.ValidTimes), fv)
-		msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", cnt, uint64(rs[i][1]))
+		msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(rs[i][28]), uint64(rs[i][1]))
 		msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", rs[i][2]/rs[i][1]*100, rank[2])
 		msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", rs[i][27]/60, rank[27])
 		msg += fmt.Sprintf("场均补刀：%.1f (%.1f%%)\n", rs[i][3], rank[3])
