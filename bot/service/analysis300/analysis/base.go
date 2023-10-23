@@ -115,15 +115,22 @@ func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, f
 func HeroAnalysis(PlayerID uint64, fv int) (result [][28]float64, total uint64) {
 	var players []db.Player
 	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and fv >= ?", PlayerID, fv).Find(&players)
-	total = 0
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].CreateTime >= players[j].CreateTime
+	})
+	total = uint64(len(players))
 
 	addValue := func(v [28]float64, me db.Player) [28]float64 {
+		// 过滤低于阈值的战绩
 		if me.FV < fv {
+			return v
+		}
+		// 只计算最近50场
+		if v[1] >= MaxPlayTimes {
 			return v
 		}
 		minute := float64(me.UsedTime) / 60
 		v[1]++
-		total++
 		if me.Result == 1 || me.Result == 3 {
 			v[2]++
 		}

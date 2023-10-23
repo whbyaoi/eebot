@@ -4,6 +4,7 @@ import (
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"fmt"
+	"sort"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -11,6 +12,8 @@ import (
 var ValidTimes = 5.0
 
 var ValidIntervalTimes = 100
+
+var MaxPlayTimes = 50.0
 
 // 索引 - 英雄数据水平
 var HeroDataToName = map[int]string{
@@ -54,6 +57,9 @@ var MatchIntervalKey = "300analysis_shuffle"
 func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	var players []db.Player
 	db.SqlDB.Model(db.Player{}).Where("hero_id = ?", HeroID).Find(&players)
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].CreateTime >= players[j].CreateTime
+	})
 
 	idToRecord := map[uint64][]db.Player{}
 	for i := range players {
@@ -77,7 +83,7 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 		for i, factor := range factors {
 			overallScore += rank[i] * factor
 		}
-		overallScore = overallScore * (0.9 + min(data[id]["total"]-ValidTimes, 50)/50*0.05) * (0.9 + rank[1]/100*0.1)
+		overallScore = overallScore * (0.9 + min(data[id]["total"], MaxPlayTimes)/MaxPlayTimes*0.1) * (0.7 + rank[1]/100*0.3)
 		key := prefix + HeroDataToName[28]
 		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
 	}
@@ -122,6 +128,10 @@ func getHeroOfPlayerData(raw map[uint64][]db.Player, fv int) (data map[uint64]ma
 	addValue := func(v [28]float64, me db.Player) [28]float64 {
 		// 过滤低于阈值的战绩
 		if me.FV < fv {
+			return v
+		}
+		// 只计算最近50场
+		if v[1] >= MaxPlayTimes {
 			return v
 		}
 		minute := float64(me.UsedTime) / 60
@@ -185,7 +195,7 @@ func getHeroOfPlayerData(raw map[uint64][]db.Player, fv int) (data map[uint64]ma
 }
 
 // GetHeroOfPlayerRank 获取某位玩家的英雄水平(包含综合评分)
-func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (rank [29]float64, overallScore uint64, total int64) {
+func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (rank [29]float64, overallScore int64, total int64) {
 	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
 	for index, name := range HeroDataToName {
 		key := prefix + name
@@ -194,7 +204,7 @@ func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (rank [29]float64,
 		rank[index] = float64(pos) / float64(total-1) * 100
 		if index == 28 {
 			tmp, _ := collect.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
-			overallScore = uint64(tmp)
+			overallScore = int64(tmp)
 		}
 	}
 	return

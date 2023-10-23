@@ -296,15 +296,17 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[hero], fv)
 	rs, total := analysis.HeroAnalysis(PlayerID, fv)
 	rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
-	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d\n", name, total)
+	msg += fmt.Sprintf("昵称：%s，总场次：%d\n", name, total)
 	for i := range rs {
 		if db.HeroIDToName[int(rs[i][0])] != hero {
 			continue
 		}
+		var cnt int64
+		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ? and fv > ?", PlayerID, db.HeroNameToID[hero], fv).Count(&cnt)
 		msg += fmt.Sprintf("英雄：%s\n", hero)
 		msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total2, int(analysis.ValidTimes), fv)
-		msg += fmt.Sprintf("场次：%d，占比%.1f%% (超越%.1f%%的玩家，下同)\n", uint64(rs[i][1]), rs[i][1]/float64(total)*100, rank[1])
-		msg += fmt.Sprintf("胜率：%.1f%% (%.1f%%)\n", rs[i][2]/rs[i][1]*100, rank[2])
+		msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", cnt, uint64(rs[i][1]))
+		msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", rs[i][2]/rs[i][1]*100, rank[2])
 		msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", rs[i][27]/60, rank[27])
 		msg += fmt.Sprintf("场均补刀：%.1f (%.1f%%)\n", rs[i][3], rank[3])
 		msg += fmt.Sprintf("场均每分补刀：%.2f (%.1f%%)\n", rs[i][4], rank[4])
@@ -378,7 +380,15 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		}
 		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)
 		rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
-		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%d(%.1f%%)\n", i+1, db.HeroIDToName[int(rs[i][0])], uint64(rs[i][1]), rs[i][2]/rs[i][1]*100, overallScore, rank[28])
+		players := []db.Player{}
+		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ?", PlayerID, rs[i][0]).Find(&players)
+		win := 0
+		for j := range players {
+			if players[j].Result == 1 || players[j].Result == 3 {
+				win++
+			}
+		}
+		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%d(%.1f%%)\n", i+1, db.HeroIDToName[int(rs[i][0])], len(players), float64(win)/float64(len(players))*100, overallScore, rank[28])
 	}
 	return
 }

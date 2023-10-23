@@ -186,10 +186,6 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 		var localPlayers []db.Player
 		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
 
-		// TODO 效率有点低
-		var match db.Match
-		db.SqlDB.Model(&db.Match{}).Where("match_id = ?", matchIds[i]).Find(&match)
-
 		var tmp [5]int
 		fvSum1 := 0 // 己方团分
 		fvSum2 := 0 // 对面团分
@@ -199,10 +195,10 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 				selfFV = localPlayers[j].FV
 				fvRange[0] = min(localPlayers[j].FV, fvRange[0])
 				fvRange[1] = max(localPlayers[j].FV, fvRange[1])
-				timeRange[0] = min(match.CreateTime, timeRange[0])
-				timeRange[1] = max(match.CreateTime, timeRange[1])
-				if match.CreateTime >= maxTimestamps {
-					maxTimestamps = match.CreateTime
+				timeRange[0] = min(localPlayers[j].CreateTime, timeRange[0])
+				timeRange[1] = max(localPlayers[j].CreateTime, timeRange[1])
+				if localPlayers[j].CreateTime >= maxTimestamps {
+					maxTimestamps = localPlayers[j].CreateTime
 					fvNow = selfFV
 				}
 			}
