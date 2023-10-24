@@ -1,15 +1,22 @@
 package analysis300
 
 import (
+	"context"
 	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"eebot/bot/service/analysis300/print"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/chromedp/chromedp"
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 func ExportTeamAnalysis(name string) (msg string, err error) {
@@ -453,6 +460,112 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 		idStr := result[i].Member.(string)
 		id, _ := strconv.ParseUint(idStr, 10, 64)
 		msg += fmt.Sprintf("%d、昵称：%s，评分：%.1f\n", i+1, collect.SearchName(id), result[i].Score)
+	}
+	return
+}
+
+func ExportJJLWithTeamAnalysis(name string) (msg string, err error) {
+	PlayerID, err := collect.SearchRoleID(name)
+	if err != nil {
+		return
+	}
+
+	timeRange, jjl, team := analysis.JJLWithTeamAnalysis(PlayerID)
+	if len(timeRange) == 0 {
+		return "", errors.New("分析异常")
+	}
+
+	bar := charts.NewBar()
+	bar.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title:    "竞技力与开黑情况",
+			Subtitle: "玩家：" + name,
+			Left:     "10%",
+		}),
+		charts.WithSingleAxisOpts(opts.SingleAxis{
+			Type: "time",
+		}),
+		charts.WithYAxisOpts(opts.YAxis{Name: "场次", NameLocation: "start", Show: true, AxisLabel: &opts.AxisLabel{Show: true}}),
+	)
+	generateData := func(index int) (arr []opts.BarData) {
+		var sum uint64
+		for i := range team {
+			sum += team[i][index]
+			arr = append(arr, opts.BarData{Value: sum})
+		}
+		return
+	}
+	data0 := generateData(0)
+	data1 := generateData(1)
+	data2 := generateData(2)
+	data3 := generateData(3)
+	bar.SetXAxis(timeRange)
+	bar.AddSeries("单排", data0, charts.WithBarChartOpts(opts.BarChart{YAxisIndex: 0})).
+		AddSeries("双排", data1, charts.WithBarChartOpts(opts.BarChart{YAxisIndex: 0})).
+		AddSeries("三黑", data2, charts.WithBarChartOpts(opts.BarChart{YAxisIndex: 0})).
+		AddSeries("四黑", data3, charts.WithBarChartOpts(opts.BarChart{YAxisIndex: 0})).
+		SetSeriesOptions(charts.WithBarChartOpts(opts.BarChart{
+			Stack:          "stackA",
+			BarCategoryGap: "0%",
+		}))
+	bar.ExtendYAxis(opts.YAxis{Name: "竞技力", NameLocation: "start", Show: true, AxisLabel: &opts.AxisLabel{Show: true}, Min: "dataMin", Max: "dataMax"})
+
+	data4 := []opts.LineData{}
+	for i := range jjl {
+		data4 = append(data4, opts.LineData{Value: jjl[i]})
+	}
+	line := charts.NewLine()
+	line.SetGlobalOptions(
+		charts.WithAnimation(),
+		charts.WithSingleAxisOpts(opts.SingleAxis{
+			Type:   "time",
+			Bottom: "10%",
+		}),
+	)
+	line.SetXAxis(timeRange).AddSeries("竞技力", data4, charts.WithLineChartOpts(opts.LineChart{YAxisIndex: 1})).
+		SetSeriesOptions(charts.WithMarkPointNameTypeItemOpts(
+			opts.MarkPointNameTypeItem{Name: "Maximum", Type: "max"},
+			opts.MarkPointNameTypeItem{Name: "Minimum", Type: "min"},
+		))
+
+	bar.Overlap(line)
+	f, err := os.Create(fmt.Sprintf("./files/%d.html", PlayerID))
+	if err != nil {
+		return "", err
+	}
+	err = bar.Render(f)
+	if err != nil {
+		return "", err
+	}
+	err = SavePNG(fmt.Sprintf("./files/%d", PlayerID))
+	if err != nil {
+		return "", err
+	}
+	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d", PlayerID))
+	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
+}
+
+func SavePNG(file string) (err error) {
+	abs, _ := filepath.Abs(file)
+
+	ctx, cancel := chromedp.NewContext(
+		context.Background(),
+	)
+	defer cancel()
+
+	var buf []byte
+
+	task := chromedp.Tasks{
+		chromedp.Navigate("file://" + abs + ".html"),
+		// chromedp.EmulateViewport(1200, 600),
+		chromedp.FullScreenshot(&buf, 100),
+	}
+
+	if err = chromedp.Run(ctx, task); err != nil {
+		return
+	}
+	if err = os.WriteFile(abs+".png", buf, 0644); err != nil {
+		return
 	}
 	return
 }

@@ -97,6 +97,8 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		}
 	case "l": // 常用
 		suffix, err = analysis300.ExportLikeAnalysis(name)
+	case "jjl": // 竞技力
+		suffix, err = analysis300.ExportJJLWithTeamAnalysis(name)
 	case "top": // top10
 		var fv int
 		if len(rawMessageSlice) > 3 {
@@ -135,6 +137,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "t 玩家 --- 开黑分析\n"
 		suffix += "s 玩家 --- 洗牌分析\n"
 		suffix += "l 玩家 --- 常用分析\n"
+		suffix += "jjl 玩家 - 竞技力与开黑分析\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 高手前10"

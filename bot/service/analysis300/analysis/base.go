@@ -2,9 +2,11 @@ package analysis
 
 import (
 	"eebot/bot/service/analysis300/db"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
+	"time"
 )
 
 var PlayerListKey = "300analysis:player_list"
@@ -246,4 +248,142 @@ func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 		return
 	}
 	return nil, fmt.Errorf("不存在 %s 该英雄", HeroName)
+}
+
+func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, team [][4]uint64) {
+	timeToData := map[int64][6]uint64{} // 时间戳 - [单排次数, 双排次数, 三黑次数, 四黑次数, jjl, jjl对应时间戳]
+
+	// 先获得开黑情况
+	matchIds, sides := getMatchIdsAndSides(PlayerID)
+	if len(matchIds) == 0 {
+		return
+	}
+
+	allyInfo := map[uint64]int{}               // id-cnt
+	matchToPlayers := map[string][]db.Player{} // match_id - players
+	for i := range matchIds {
+		// 找到这局的玩家
+		var localPlayers []db.Player
+		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
+		matchToPlayers[matchIds[i]] = localPlayers
+		for j := range localPlayers {
+			if localPlayers[j].PlayerID == PlayerID || localPlayers[j].Side != sides[i] {
+				continue
+			}
+			allyInfo[localPlayers[j].PlayerID]++
+		}
+	}
+
+	sortedAllies := [][2]uint64{}
+	for k, v := range allyInfo {
+		sortedAllies = append(sortedAllies, [2]uint64{k, uint64(v)})
+	}
+	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][1] > sortedAllies[j][1] })
+	top10Allies := sortedAllies[:10]
+	contain := func(arr [][2]uint64, id uint64) bool {
+		for i := range arr {
+			if arr[i][0] == id {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, players := range matchToPlayers {
+		cnt := 0
+		for i := range players {
+			if players[i].PlayerID == PlayerID {
+				continue
+			}
+			if contain(top10Allies, players[i].PlayerID) {
+				cnt++
+			}
+		}
+		cnt = min(cnt, 3)
+
+		tmp := time.Unix(int64(players[0].CreateTime), 0)
+		timestamp := time.Date(tmp.Year(), tmp.Month(), tmp.Day(), 23, 59, 59, 0, time.Local).Unix()
+		if v, ok := timeToData[timestamp]; ok {
+			v[cnt] += 1
+			timeToData[timestamp] = v
+		} else {
+			tmp := [6]uint64{0, 0, 0, 0, 0, 0}
+			tmp[cnt] += 1
+			timeToData[timestamp] = tmp
+		}
+	}
+
+	// 获得团分情况
+	players := []db.Player{}
+	db.SqlDB.Model(db.Player{}).Where("player_id = ?", PlayerID).Find(&players)
+	for i := range players {
+		tmp := time.Unix(int64(players[i].CreateTime), 0)
+		timestamp := time.Date(tmp.Year(), tmp.Month(), tmp.Day(), 23, 59, 59, 0, time.Local).Unix()
+		if v, ok := timeToData[timestamp]; ok {
+			if uint64(players[i].CreateTime) >= v[5] {
+				v[5] = uint64(players[i].CreateTime)
+				v[4] = uint64(players[i].FV)
+				timeToData[timestamp] = v
+			}
+		} else {
+			tmp := [6]uint64{0, 0, 0, 0, uint64(players[i].FV), uint64(players[i].CreateTime)}
+			timeToData[timestamp] = tmp
+		}
+	}
+
+	// 按照时间戳排序
+	sortedData := [][7]uint64{}
+	for timestamp, data := range timeToData {
+		tmp := [7]uint64{}
+		tmp[0] = uint64(timestamp)
+		tmp[1] = data[0]
+		tmp[2] = data[1]
+		tmp[3] = data[2]
+		tmp[4] = data[3]
+		tmp[5] = data[4]
+		tmp[6] = data[5]
+		sortedData = append(sortedData, tmp)
+	}
+	sort.Slice(sortedData, func(i, j int) bool { return sortedData[i][0] < sortedData[j][0] })
+
+	// fmt.Printf("len(sortedData): %v\n", len(sortedData))
+	// str := FormatJson(sortedData[:10], true)
+	// fmt.Printf("str: %v\n", str)
+
+	// 插入第一条
+	timeRange = append(timeRange, time.Unix(int64(sortedData[0][0]), 0).Format(time.DateOnly))
+	jjl = append(jjl, sortedData[0][5])
+	team = append(team, [4]uint64{sortedData[0][1], sortedData[0][2], sortedData[0][3], sortedData[0][4]})
+	for i := 1; i < len(sortedData); i++ {
+		add := 0
+		for (sortedData[i][0] - sortedData[i-1][0] - uint64(add*86400)) > 86400 {
+			// 仿造一条数据插入
+			add++
+			timeRange = append(timeRange, time.Unix(int64(sortedData[i-1][0]+uint64(add*86400)), 0).Format(time.DateOnly))
+			jjl = append(jjl, sortedData[i-1][5])	
+			team = append(team, [4]uint64{0, 0, 0, 0})
+		}
+		// 插入今天的数据
+		timeRange = append(timeRange, time.Unix(int64(sortedData[i][0]), 0).Format(time.DateOnly))
+		jjl = append(jjl, sortedData[i][5])
+		team = append(team, [4]uint64{sortedData[i][1], sortedData[i][2], sortedData[i][3], sortedData[i][4]})
+	}
+
+	// fmt.Printf("timeRange: %v\n", timeRange)
+	return
+}
+
+// FormatJson 格式化Json以便更容器查看, 如果m格式错误则返回空字符串
+func FormatJson(m interface{}, indent bool) string {
+	var b []byte
+	var err error
+	if !indent {
+		b, err = json.Marshal(m)
+	} else {
+		b, err = json.MarshalIndent(m, "", "  ")
+	}
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
