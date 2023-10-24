@@ -8,7 +8,7 @@ CREATE TABLE
         `create_time` int DEFAULT NULL COMMENT '游戏结束时间戳',
         PRIMARY KEY (`id`),
         UNIQUE KEY `match_id` (`match_id`)
-    ) ENGINE = InnoDB AUTO_INCREMENT = 104776 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '比赛表';
+    ) ENGINE = InnoDB AUTO_INCREMENT = 0 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '比赛表';
 
 CREATE TABLE
     `players` (
@@ -44,10 +44,11 @@ CREATE TABLE
         `take_damage_side` int DEFAULT NULL COMMENT '己方总承伤',
         `take_damage_percent` double DEFAULT NULL COMMENT '个人承伤占比',
         `damage_conversion_rate` double DEFAULT NULL COMMENT '伤害转换率',
+        `create_time` int DEFAULT NULL COMMENT '游戏结束时间戳',
         PRIMARY KEY (`id`),
         UNIQUE KEY `match_id_2` (`match_id`, `player_id`),
         KEY `hero_id` (`hero_id`),
         KEY `fv` (`fv`),
         KEY `match_id` (`match_id`),
         KEY `player_id` (`player_id`)
-    ) ENGINE = InnoDB AUTO_INCREMENT = 1460863 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '玩家战绩表';
+    ) ENGINE = InnoDB AUTO_INCREMENT = 0 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '玩家战绩表';
