@@ -282,7 +282,10 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 	top10Allies := sortedAllies[:10]
 	contain := func(arr [][2]uint64, id uint64) bool {
 		for i := range arr {
-			if arr[i][0] == id {
+			// 包含在频次top10中
+			// 并且频次超过3把或者场次占比超过2%
+			// 则认为是开黑队友
+			if arr[i][0] == id && (arr[i][1] > 3 || (float64(arr[i][1])/float64(len(matchIds))) >= 0.02) {
 				return true
 			}
 		}
@@ -360,7 +363,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			// 仿造一条数据插入
 			add++
 			timeRange = append(timeRange, time.Unix(int64(sortedData[i-1][0]+uint64(add*86400)), 0).Format(time.DateOnly))
-			jjl = append(jjl, sortedData[i-1][5])	
+			jjl = append(jjl, sortedData[i-1][5])
 			team = append(team, [4]uint64{0, 0, 0, 0})
 		}
 		// 插入今天的数据

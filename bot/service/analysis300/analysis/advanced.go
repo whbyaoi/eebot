@@ -119,7 +119,10 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 	top10Allies := sortedAllies[:10]
 	contain := func(slice [][3]uint64, id uint64) bool {
 		for i := range slice {
-			if slice[i][0] == id {
+			// 包含在频次top10中
+			// 并且频次超过3把或者场次占比超过2%
+			// 则认为是开黑队友
+			if slice[i][0] == id && (slice[i][2] > 3 || (float64(slice[i][2])/float64(len(matchIds))) >= 0.02) {
 				return true
 			}
 		}
