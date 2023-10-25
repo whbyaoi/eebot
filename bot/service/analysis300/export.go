@@ -578,8 +578,9 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	radar := charts.NewRadar()
 	radar.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: "Legend(Multi)",
-			Right: "center",
+			Title:    "英雄场均数据及榜一对比",
+			Subtitle: "英雄：" + hero,
+			Left:     "20%",
 			TitleStyle: &opts.TextStyle{
 				Color: "#eee",
 			},
@@ -644,7 +645,7 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 		return "", err
 	}
 	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d_pk", PlayerID))
-	return fmt.Sprintf("[CQ:image,file=file://%s_pk.png]", abs), nil
+	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
 func SavePNG(file string) (err error) {

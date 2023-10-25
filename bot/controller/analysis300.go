@@ -148,6 +148,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "s 玩家 --- 洗牌分析\n"
 		suffix += "l 玩家 --- 常用分析\n"
 		suffix += "jjl 玩家 - 竞技力与开黑分析\n"
+		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 高手前10"
