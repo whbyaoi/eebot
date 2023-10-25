@@ -269,9 +269,12 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 	if err != nil {
 		return
 	}
+	if _, ok := db.HeroNameToID[hero]; !ok {
+		return "未知英雄 " + name, nil
+	}
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[hero], fv)
 	rs, total := analysis.HeroAnalysis(PlayerID, fv)
-	rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
+	_, rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
 	msg += fmt.Sprintf("昵称：%s，总场次：%d\n", name, total)
 	for i := range rs {
 		if db.HeroIDToName[int(rs[i][0])] != hero {
@@ -353,7 +356,7 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 			break
 		}
 		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)
-		rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
+		_, rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
 		players := []db.Player{}
 		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ?", PlayerID, rs[i][0]).Find(&players)
 		win := 0
@@ -543,6 +546,105 @@ func ExportJJLWithTeamAnalysis(name string) (msg string, err error) {
 	}
 	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d", PlayerID))
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
+}
+
+func ExportPKAnalysis(name string, hero string) (msg string, err error) {
+	PlayerID, err := collect.SearchRoleID(name)
+	if err != nil {
+		return
+	}
+	if _, ok := db.HeroNameToID[hero]; !ok {
+		return "未知英雄 " + name, nil
+	}
+	you, top1 := analysis.PKAnalysis(PlayerID, db.HeroNameToID[hero])
+
+	var indicators = []*opts.Indicator{
+		{Name: "胜率", Max: 1},
+		{Name: "场均耗时", Max: 40},
+		{Name: "场均每分补刀", Max: 12},
+		{Name: "场均每分击杀", Max: float32(max(0.5, you[3], top1[3]) * 1.2)},
+		{Name: "场均每分死亡", Max: float32(max(0.3, you[4], top1[4]) * 1.2)},
+		{Name: "场均每分助攻", Max: float32(max(0.7, you[5], top1[5]) * 1.2)},
+		{Name: "场均每分推塔", Max: float32(max(0.1, you[6], top1[6]) * 1.2)},
+		{Name: "场均每分插眼", Max: float32(max(0.1, you[7], top1[7]) * 1.2)},
+		{Name: "场均每分排眼", Max: float32(max(0.1, you[8], top1[8]) * 1.2)},
+		{Name: "场均每分经济", Max: float32(max(500, you[9], top1[9]) * 1.2)},
+		{Name: "场均每分输出", Max: float32(max(1000, you[10], top1[10]) * 1.2)},
+		{Name: "场均每分承伤", Max: float32(max(1000, you[11], top1[11]) * 1.2)},
+		{Name: "场均经济转换率", Max: float32(max(300, you[12], top1[12]) * 1.2)},
+		{Name: "综合评分", Max: float32(max(300, you[13], top1[13]) * 1.2), Min: -100},
+	}
+
+	radar := charts.NewRadar()
+	radar.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: "Legend(Multi)",
+			Right: "center",
+			TitleStyle: &opts.TextStyle{
+				Color: "#eee",
+			},
+		}),
+		charts.WithInitializationOpts(opts.Initialization{
+			BackgroundColor: "#161627",
+		}),
+		charts.WithRadarComponentOpts(opts.RadarComponent{
+			Indicator:   indicators,
+			Shape:       "polygon",
+			SplitNumber: 5,
+			SplitLine: &opts.SplitLine{
+				Show: true,
+				LineStyle: &opts.LineStyle{
+					Opacity: 0.1,
+				},
+			},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{Show: true}),
+		charts.WithLegendOpts(opts.Legend{
+			Show:   true,
+			Bottom: "5px",
+			TextStyle: &opts.TextStyle{
+				Color: "#eee",
+			},
+		}),
+	)
+
+	radar.AddSeries("排行第一", []opts.RadarData{{Value: top1}},
+		charts.WithItemStyleOpts(opts.ItemStyle{Color: "#F9713C"}),
+		charts.WithLabelOpts(opts.Label{
+			Show:     true,
+			Position: "top",
+			Color:    "#F9713C",
+		})).
+		AddSeries(name, []opts.RadarData{{Value: you}},
+			charts.WithItemStyleOpts(opts.ItemStyle{Color: "#B3E4A1"}),
+			charts.WithLabelOpts(opts.Label{
+				Show:     true,
+				Position: "bottom",
+				Color:    "#B3E4A1",
+			})).
+		SetSeriesOptions(
+			charts.WithLineStyleOpts(opts.LineStyle{
+				Width:   1,
+				Opacity: 0.5,
+			}),
+			charts.WithAreaStyleOpts(opts.AreaStyle{
+				Opacity: 0.1,
+			}),
+		)
+	f, err := os.Create(fmt.Sprintf("./files/%d_pk.html", PlayerID))
+	if err != nil {
+		return "", err
+	}
+	err = radar.Render(f)
+	if err != nil {
+		return "", err
+	}
+	err = SavePNG(fmt.Sprintf("./files/%d_pk", PlayerID))
+	if err != nil {
+		return "", err
+	}
+	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d_pk", PlayerID))
+	return fmt.Sprintf("[CQ:image,file=file://%s_pk.png]", abs), nil
 }
 
 func SavePNG(file string) (err error) {

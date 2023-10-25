@@ -195,13 +195,16 @@ func getHeroOfPlayerData(raw map[uint64][]db.Player, fv int) (data map[uint64]ma
 }
 
 // GetHeroOfPlayerRank 获取某位玩家的英雄水平(包含综合评分)
-func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (rank [29]float64, overallScore int64, total int64) {
+func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (scores [29]float64, rank [29]float64, overallScore int64, total int64) {
 	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
 	for index, name := range HeroDataToName {
 		key := prefix + name
 		total, _ = collect.RDB.ZCard(collect.Ctx, key).Result()
 		pos, _ := collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 		rank[index] = float64(pos) / float64(total-1) * 100
+
+		tmp, _ := collect.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+		scores[index] = tmp
 		if index == 28 {
 			tmp, _ := collect.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 			overallScore = int64(tmp)

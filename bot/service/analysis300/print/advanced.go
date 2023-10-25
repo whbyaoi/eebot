@@ -147,7 +147,7 @@ func IsSameRange(avg, fv int) int {
 func PrintAssignHeroAnalysisAdvanced(PlayerID uint64, name string, fv int) {
 	rs, total := analysis.HeroAnalysis(PlayerID, fv)
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[name], fv)
-	rank, _, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[name], PlayerID, fv)
+	_, rank, _, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[name], PlayerID, fv)
 	fmt.Printf("英雄分析，昵称：%s，总场次：%d\n", collect.SearchName(PlayerID), total)
 	for i := range rs {
 		if db.HeroIDToName[int(rs[i][0])] != name {

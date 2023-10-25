@@ -27,7 +27,7 @@ func PrintTeamAnalysis(playerID uint64, limit int) {
 }
 
 func PrintWinOrLoseAnalysis(PlayerID uint64) {
-	rs, _, _,  fvRange, fvNow := analysis.WinOrLoseAnalysis(PlayerID)
+	rs, _, _, fvRange, fvNow := analysis.WinOrLoseAnalysis(PlayerID)
 
 	win := 0
 	lose := 0

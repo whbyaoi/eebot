@@ -37,7 +37,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	defer func() {
 		if r := recover(); r != nil {
 			service.Reply("未知错误", prefix, targetID)
-			err = fmt.Errorf("%v", r)
+			err = fmt.Errorf("%+v", r)
 		}
 	}()
 
@@ -99,6 +99,16 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix, err = analysis300.ExportLikeAnalysis(name)
 	case "jjl": // 竞技力
 		suffix, err = analysis300.ExportJJLWithTeamAnalysis(name)
+	case "pk":
+		assgin := ""
+		if len(rawMessageSlice) > 3 {
+			assgin = rawMessageSlice[3]
+		}
+		if assgin == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportPKAnalysis(name, assgin)
+		}
 	case "top": // top10
 		var fv int
 		if len(rawMessageSlice) > 3 {

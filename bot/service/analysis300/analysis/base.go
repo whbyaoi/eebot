@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -360,7 +361,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			// 仿造一条数据插入
 			add++
 			timeRange = append(timeRange, time.Unix(int64(sortedData[i-1][0]+uint64(add*86400)), 0).Format(time.DateOnly))
-			jjl = append(jjl, sortedData[i-1][5])	
+			jjl = append(jjl, sortedData[i-1][5])
 			team = append(team, [4]uint64{0, 0, 0, 0})
 		}
 		// 插入今天的数据
@@ -386,4 +387,45 @@ func FormatJson(m interface{}, indent bool) string {
 		return ""
 	}
 	return string(b)
+}
+
+func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [14]float64) {
+	UpdateHeroOfPlayerRank(HeroID, 0)
+	// 获取自己数据
+	scores, _, overallScore, _ := GetHeroOfPlayerRank(HeroID, PlayerID, 0)
+	selfData[0] = math.Round(scores[2]*100) / 100
+	selfData[1] = math.Round(scores[27]/60*100) / 100
+	selfData[2] = math.Round(scores[4]*100) / 100
+	selfData[3] = math.Round(scores[6]*100) / 100
+	selfData[4] = math.Round(scores[8]*100) / 100
+	selfData[5] = math.Round(scores[10]*100) / 100
+	selfData[6] = math.Round(scores[12]*100) / 100
+	selfData[7] = math.Round(scores[14]*100) / 100
+	selfData[8] = math.Round(scores[16]*100) / 100
+	selfData[9] = math.Round(scores[18]*100) / 100
+	selfData[10] = math.Round(scores[21]*100) / 100
+	selfData[11] = math.Round(scores[24]*100) / 100
+	selfData[12] = math.Round(scores[26]*100) / 100
+	selfData[13] = math.Round(float64(overallScore)*100) / 100
+
+	// 获取top1数据
+	top10, _, _ := GetTopRank(HeroID, 0)
+	top1IDStr := top10[0].Member.(string)
+	top1ID, _ := strconv.ParseUint(top1IDStr, 10, 64)
+	scores, _, overallScore, _ = GetHeroOfPlayerRank(HeroID, top1ID, 0)
+	otherData[0] = math.Round(scores[2]*100) / 100
+	otherData[1] = math.Round(scores[27]/60*100) / 100
+	otherData[2] = math.Round(scores[4]*100) / 100
+	otherData[3] = math.Round(scores[6]*100) / 100
+	otherData[4] = math.Round(scores[8]*100) / 100
+	otherData[5] = math.Round(scores[10]*100) / 100
+	otherData[6] = math.Round(scores[12]*100) / 100
+	otherData[7] = math.Round(scores[14]*100) / 100
+	otherData[8] = math.Round(scores[16]*100) / 100
+	otherData[9] = math.Round(scores[18]*100) / 100
+	otherData[10] = math.Round(scores[21]*100) / 100
+	otherData[11] = math.Round(scores[24]*100) / 100
+	otherData[12] = math.Round(scores[26]*100) / 100
+	otherData[13] = math.Round(float64(overallScore)*100) / 100
+	return
 }
