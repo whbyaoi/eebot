@@ -23,6 +23,7 @@ var SearchRoleIDFromNameUrl = "https://300report.jumpw.com/api/battle/searchNorm
 
 var contentType = "application/x-www-form-urlencoded; charset=UTF-8"
 
+// SearchMatches 通过url获取战绩列表
 func SearchMatches(RoleID uint64, MatchType int, searchIndex int) (matches []db.Match, err error) {
 	values := url.Values{}
 	values.Set("RoleID", strconv.FormatUint(RoleID, 10))
@@ -68,6 +69,7 @@ A:
 	return
 }
 
+// SearchMatchInfo 通过url获取战绩详情
 func SearchMatchInfo(matchID string) (match db.Match, err error) {
 	values := url.Values{}
 	values.Set("mtid", matchID)
@@ -100,6 +102,7 @@ A:
 	return
 }
 
+// SearchRoleID 通过url获取id
 func SearchRoleID(name string) (RoleID uint64, err error) {
 	defer func() {
 		if err != nil && err.Error() == "error interface result" {
@@ -141,13 +144,14 @@ func SearchRoleID(name string) (RoleID uint64, err error) {
 	return
 }
 
+// SearchName 通过url获取名称
 func SearchName(RoleID uint64) (Name string) {
 	defer func() {
 		if Name == "*******" {
 			Name = fmt.Sprintf("id:%d", RoleID)
 		}
 	}()
-	name, err := RDB.Get(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID)).Result()
+	name, err := db.RDB.Get(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID)).Result()
 	if err == nil {
 		return name
 	}
@@ -157,6 +161,6 @@ func SearchName(RoleID uint64) (Name string) {
 		return
 	}
 
-	RDB.Set(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID), matches[0].Players[0].Name, Expiration)
+	db.RDB.Set(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID), matches[0].Players[0].Name, Expiration)
 	return matches[0].Players[0].Name
 }

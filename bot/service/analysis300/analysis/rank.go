@@ -71,7 +71,7 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	for id, detail := range data {
 		for k, score := range detail {
 			key := prefix + k
-			collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: score, Member: id})
+			db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: score, Member: id})
 		}
 	}
 
@@ -85,7 +85,7 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 		}
 		overallScore = overallScore * (0.9 + min(data[id]["total"], MaxPlayTimes)/MaxPlayTimes*0.1) * (0.7 + rank[1]/100*0.3)
 		key := prefix + HeroDataToName[28]
-		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
+		db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
 	}
 }
 
@@ -100,10 +100,10 @@ func InitMatchInterval() {
 		avg, than10min, total := ShuffleAnalysis(players[i].PlayerID)
 
 		key := prefix + "avg"
-		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(avg), Member: players[i].PlayerID})
+		db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(avg), Member: players[i].PlayerID})
 
 		key = prefix + "than_10_min"
-		collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(than10min) / float64(total), Member: players[i].PlayerID})
+		db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(than10min) / float64(total), Member: players[i].PlayerID})
 	}
 }
 
@@ -114,10 +114,10 @@ func UpdateMatchInterval(PlayerID uint64) {
 	avg, than10min, total := ShuffleAnalysis(PlayerID)
 
 	key := prefix + "avg"
-	collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(avg), Member: PlayerID})
+	db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(avg), Member: PlayerID})
 
 	key = prefix + "than_10_min"
-	collect.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(than10min) / float64(total), Member: PlayerID})
+	db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: float64(than10min) / float64(total), Member: PlayerID})
 }
 
 // getHeroOfPlayerData 计算玩家的英雄数据水平
@@ -199,14 +199,14 @@ func GetHeroOfPlayerRank(HeroID int, PlayerID uint64, fv int) (scores [29]float6
 	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
 	for index, name := range HeroDataToName {
 		key := prefix + name
-		total, _ = collect.RDB.ZCard(collect.Ctx, key).Result()
-		pos, _ := collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+		total, _ = db.RDB.ZCard(collect.Ctx, key).Result()
+		pos, _ := db.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 		rank[index] = float64(pos) / float64(total-1) * 100
 
-		tmp, _ := collect.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+		tmp, _ := db.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 		scores[index] = tmp
 		if index == 28 {
-			tmp, _ := collect.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+			tmp, _ := db.RDB.ZScore(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 			overallScore = int64(tmp)
 		}
 	}
@@ -221,8 +221,8 @@ func GetHeroOfPlayerRankWithoutOverallScore(HeroID int, PlayerID uint64, fv int)
 			continue
 		}
 		key := prefix + name
-		total, _ = collect.RDB.ZCard(collect.Ctx, key).Result()
-		pos, _ := collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+		total, _ = db.RDB.ZCard(collect.Ctx, key).Result()
+		pos, _ := db.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 		rank[index] = float64(pos) / float64(total-1) * 100
 	}
 	return
@@ -232,8 +232,8 @@ func GetHeroOfPlayerRankWithoutOverallScore(HeroID int, PlayerID uint64, fv int)
 func GetTopRank(HeroID int, fv int) (result []redis.Z, total int64, err error) {
 	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
 	key := prefix + HeroDataToName[28]
-	result, err = collect.RDB.ZRevRangeWithScores(collect.Ctx, key, 0, 9).Result()
-	total, _ = collect.RDB.ZCard(collect.Ctx, key).Result()
+	result, err = db.RDB.ZRevRangeWithScores(collect.Ctx, key, 0, 9).Result()
+	total, _ = db.RDB.ZCard(collect.Ctx, key).Result()
 	return
 }
 
@@ -243,13 +243,13 @@ func GetMatchInterval(PlayerID uint64) (rank [2]float64, total [2]int64) {
 	prefix := fmt.Sprintf("%s:", MatchIntervalKey)
 
 	key := prefix + "avg"
-	total[0], _ = collect.RDB.ZCard(collect.Ctx, key).Result()
-	pos, _ := collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+	total[0], _ = db.RDB.ZCard(collect.Ctx, key).Result()
+	pos, _ := db.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 	rank[0] = float64(pos) / float64(total[0]-1) * 100
 
 	key = prefix + "than_10_min"
-	total[1], _ = collect.RDB.ZCard(collect.Ctx, key).Result()
-	pos, _ = collect.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
+	total[1], _ = db.RDB.ZCard(collect.Ctx, key).Result()
+	pos, _ = db.RDB.ZRank(collect.Ctx, key, fmt.Sprintf("%d", PlayerID)).Result()
 	rank[1] = float64(pos) / float64(total[1]-1) * 100
 
 	return

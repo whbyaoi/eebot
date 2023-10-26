@@ -16,8 +16,9 @@ var Analysis300Cmd = &cobra.Command{
 	Use:   "300",
 	Short: "300 bot",
 	Run: func(cmd *cobra.Command, args []string) {
-		collect.InitRedis()
+		db.InitRedis()
 		db.InitMysql()
+		collect.InitCrawler()
 		for {
 			if err := ws.InitWebsocket(); err != nil {
 				continue
@@ -35,9 +36,9 @@ var CollectDataCmd = &cobra.Command{
 	Use:   "300-collect",
 	Short: "collect 300 data via redis keys (may block 300 bot service)",
 	Run: func(cmd *cobra.Command, args []string) {
-		collect.InitRedis()
+		db.InitRedis()
 		db.InitMysql()
-		collect.UpdateMatchAndPlayer()
+		collect.Crawler.IncrementalCrawl()
 	},
 }
 
@@ -45,7 +46,7 @@ var RefreshIntervalCmd = &cobra.Command{
 	Use:   "300-refresh-interval",
 	Short: "refresh intervals of players for shuffle anslysis (may block 300 bot service)",
 	Run: func(cmd *cobra.Command, args []string) {
-		collect.InitRedis()
+		db.InitRedis()
 		db.InitMysql()
 		analysis.InitMatchInterval()
 	},
@@ -55,7 +56,7 @@ var AddTimestampCmd = &cobra.Command{
 	Use:   "300-add-timestamp",
 	Short: "add timestamp to table players (may block 300 bot service)",
 	Run: func(cmd *cobra.Command, args []string) {
-		collect.InitRedis()
+		db.InitRedis()
 		db.InitMysql()
 
 		matches := []db.Match{}

@@ -1,6 +1,7 @@
 cqhttp: 127.0.0.1:8083
 access-token: 114514
 dev: false
+auto-collect: true
 
 analysis:
   mysql:

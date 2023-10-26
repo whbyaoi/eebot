@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func WsMessageHandler(b []byte) {
@@ -30,12 +31,8 @@ func WsMessageHandler(b []byte) {
 	switch postType {
 	// 暂时只处理message消息
 	case "message":
-		err = messageHandler(b)
+		_ = messageHandler(b)
 	default:
-	}
-
-	if err != nil {
-		g.Logger.Errorf("处理消息 %s 时错误：%s", FormatJson(m, false), err.Error())
 	}
 }
 
@@ -46,6 +43,8 @@ func messageHandler(b []byte) (err error) {
 		return err
 	}
 
+	t0 := time.Now()
+	var source int64
 	if messageBase.MessageType == "group" {
 		if !isAtMe(messageBase.RawMessage, messageBase.SelfID) || isDev() {
 			return
@@ -56,8 +55,8 @@ func messageHandler(b []byte) (err error) {
 			return err
 		}
 		g.Logger.Printf("收到 %d 群聊消息：%s", groupMessage.GroupID, groupMessage.RawMessage)
+		source = groupMessage.GroupID
 		err = message.GroupMessageHub(groupMessage)
-
 	} else {
 		var privateMessage model.PrivateMessage
 		err = json.Unmarshal(b, &privateMessage)
@@ -65,7 +64,14 @@ func messageHandler(b []byte) (err error) {
 			return err
 		}
 		g.Logger.Printf("收到 %d 私聊消息：%s", privateMessage.UserID, privateMessage.RawMessage)
+		source = privateMessage.UserID
 		err = message.PrivateMessageHub(privateMessage)
+	}
+
+	if err != nil {
+		g.Logger.Errorf("处理来自 %d 的消息 %s 时错误：%s，耗时 %v", source, messageBase.RawMessage, err.Error(), time.Since(t0))
+	} else {
+		g.Logger.Infof("处理来自 %d 的消息完毕：%s，耗时 %v", source, messageBase.RawMessage, time.Since(t0))
 	}
 
 	return
