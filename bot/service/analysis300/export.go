@@ -559,20 +559,20 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	you, top1 := analysis.PKAnalysis(PlayerID, db.HeroNameToID[hero])
 
 	var indicators = []*opts.Indicator{
-		{Name: "胜率", Max: 1},
-		{Name: "场均耗时", Max: 40},
-		{Name: "场均每分补刀", Max: 12},
-		{Name: "场均每分击杀", Max: float32(max(0.5, you[3], top1[3]) * 1.2)},
-		{Name: "场均每分死亡", Max: float32(max(0.3, you[4], top1[4]) * 1.2)},
-		{Name: "场均每分助攻", Max: float32(max(0.7, you[5], top1[5]) * 1.2)},
-		{Name: "场均推塔", Max: float32(max(3, you[6], top1[6]) * 1.2)},
-		{Name: "场均插眼", Max: float32(max(10, you[7], top1[7]) * 1.2)},
-		{Name: "场均排眼", Max: float32(max(8, you[8], top1[8]) * 1.2)},
-		{Name: "场均每分经济", Max: float32(max(500, you[9], top1[9]) * 1.2)},
-		{Name: "场均每分输出", Max: float32(max(1000, you[10], top1[10]) * 1.2)},
-		{Name: "场均每分承伤", Max: float32(max(1000, you[11], top1[11]) * 1.2)},
-		{Name: "场均经济转换率", Max: float32(max(300, you[12], top1[12]) * 1.2)},
-		{Name: "综合评分", Max: float32(max(300, you[13], top1[13]) * 1.2), Min: -100},
+		{Name: "胜率", Max: float32(max(you[0], top1[0]) * 1.2)},
+		{Name: "场均耗时", Max: float32(max(you[1], top1[1]) * 1.2)},
+		{Name: "场均每分补刀", Max: float32(max(you[2], top1[2]) * 1.2)},
+		{Name: "场均每分击杀", Max: float32(max(you[3], top1[3]) * 1.2)},
+		{Name: "场均每分死亡", Max: float32(max(you[4], top1[4]) * 1.2)},
+		{Name: "场均每分助攻", Max: float32(max(you[5], top1[5]) * 1.2)},
+		{Name: "场均推塔", Max: float32(max(you[6], top1[6]) * 1.2)},
+		{Name: "场均插眼", Max: float32(max(you[7], top1[7]) * 1.2)},
+		{Name: "场均排眼", Max: float32(max(you[8], top1[8]) * 1.2)},
+		{Name: "场均每分经济", Max: float32(max(you[9], top1[9]) * 1.2)},
+		{Name: "场均每分输出", Max: float32(max(you[10], top1[10]) * 1.2)},
+		{Name: "场均每分承伤", Max: float32(max(you[11], top1[11]) * 1.2)},
+		{Name: "场均经济转换率", Max: float32(max(you[12], top1[12]) * 1.2)},
+		{Name: "综合评分", Max: float32(max(you[13], top1[13]) * 1.2), Min: -100},
 	}
 
 	radar := charts.NewRadar()
