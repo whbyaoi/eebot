@@ -402,9 +402,9 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	selfData[3] = math.Round(scores[6]*100) / 100
 	selfData[4] = math.Round(scores[8]*100) / 100
 	selfData[5] = math.Round(scores[10]*100) / 100
-	selfData[6] = math.Round(scores[12]*100) / 100
-	selfData[7] = math.Round(scores[14]*100) / 100
-	selfData[8] = math.Round(scores[16]*100) / 100
+	selfData[6] = math.Round(scores[11]*100) / 100
+	selfData[7] = math.Round(scores[13]*100) / 100
+	selfData[8] = math.Round(scores[15]*100) / 100
 	selfData[9] = math.Round(scores[18]*100) / 100
 	selfData[10] = math.Round(scores[21]*100) / 100
 	selfData[11] = math.Round(scores[24]*100) / 100
@@ -422,9 +422,9 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	otherData[3] = math.Round(scores[6]*100) / 100
 	otherData[4] = math.Round(scores[8]*100) / 100
 	otherData[5] = math.Round(scores[10]*100) / 100
-	otherData[6] = math.Round(scores[12]*100) / 100
-	otherData[7] = math.Round(scores[14]*100) / 100
-	otherData[8] = math.Round(scores[16]*100) / 100
+	otherData[6] = math.Round(scores[11]*100) / 100
+	otherData[7] = math.Round(scores[13]*100) / 100
+	otherData[8] = math.Round(scores[15]*100) / 100
 	otherData[9] = math.Round(scores[18]*100) / 100
 	otherData[10] = math.Round(scores[21]*100) / 100
 	otherData[11] = math.Round(scores[24]*100) / 100
