@@ -84,7 +84,7 @@ func (c *crawler) getMatchDetail(MatchID string) (match *db.Match, err error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(tmp.Players) < 14 && tmp.MID != 254 {
+	if len(tmp.Players) < 14 || tmp.MID != 254 {
 		return nil, errors.New("wrong type of match detail")
 	}
 	match = &tmp
