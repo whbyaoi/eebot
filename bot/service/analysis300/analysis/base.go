@@ -432,3 +432,35 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	otherData[13] = math.Round(float64(overallScore)*100) / 100
 	return
 }
+
+func Divide[T uint64 | int64 | int](a T, b T) float64 {
+	return float64(a) / float64(b)
+}
+
+func ExtractByFV(start, end int, result [][3]int) (cnt [2]int) {
+	for i := range result {
+		avg := (result[i][0] + result[i][1]) / 2
+		if start <= avg && avg < end {
+			if result[i][2] == 1 {
+				cnt[0]++
+			} else {
+				cnt[1]++
+			}
+		}
+	}
+	return
+}
+
+func ExtractByFVAdvanced(start, end int, result [][5]int) (cnt [2]int) {
+	for i := range result {
+		avg := (result[i][0] + result[i][1]) / 2
+		if start <= avg && avg < end {
+			if result[i][2] == 1 {
+				cnt[0]++
+			} else {
+				cnt[1]++
+			}
+		}
+	}
+	return
+}
