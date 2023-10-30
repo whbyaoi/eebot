@@ -3,6 +3,7 @@ package analysis
 import (
 	"eebot/bot/service/analysis300/db"
 	"math"
+	"slices"
 	"sort"
 	"time"
 )
@@ -165,23 +166,23 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 	return
 }
 
+
 // WinOrLoseAnalysisAdvanced 进阶输赢分析(是否匹配当前分数段)
 //
+//	jjl[0-13]: 14个人的jjl
 //	result[0]: 己方均分
 //	result[1]: 敌方均分
 //	result[2]: 输赢 1-赢，2-输
 //	result[3]: 自己团分
 //	result[4]: 局类型 0-杀鸡，1-本地，2-壮丁
-//	diff: 均分差
+//	diff: 玩家分相对场均分差
 //	svd: 离散度差
-//	fvRange: 团分范围
+//	fixDiff: 修正双方均分差
 //	fvNow: 目前团分
 //	timeRange: 时间范围
-func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd int, fvRange [2]int, fvNow int, timeRange [2]uint64) {
+func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd int, fixDiff int, fixCount, fvNow int, timeRange [2]uint64) {
 	matchIds, sides := getMatchIdsAndSides(PlayerID)
 
-	fvRange[0] = 2500
-	fvRange[1] = 0
 	timeRange[0] = uint64(time.Now().Unix())
 	var maxTimestamps uint64
 	for i := range matchIds {
@@ -192,12 +193,12 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 		var tmp [5]int
 		fvSum1 := 0 // 己方团分
 		fvSum2 := 0 // 对面团分
+		fvArr := make([]int, 0, 7)
+		fvArr2 := make([]int, 0, 7)
 		for j := range localPlayers {
 			if localPlayers[j].PlayerID == PlayerID {
 				tmp[2] = localPlayers[j].Result
 				selfFV = localPlayers[j].FV
-				fvRange[0] = min(localPlayers[j].FV, fvRange[0])
-				fvRange[1] = max(localPlayers[j].FV, fvRange[1])
 				timeRange[0] = min(localPlayers[j].CreateTime, timeRange[0])
 				timeRange[1] = max(localPlayers[j].CreateTime, timeRange[1])
 				if localPlayers[j].CreateTime >= maxTimestamps {
@@ -207,8 +208,10 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 			}
 			if localPlayers[j].Side == sides[i] {
 				fvSum1 += localPlayers[j].FV
+				fvArr = append(fvArr, localPlayers[j].FV)
 			} else {
 				fvSum2 += localPlayers[j].FV
+				fvArr2 = append(fvArr, localPlayers[j].FV)
 			}
 		}
 		tmp[0] = fvSum1 / 7
@@ -260,11 +263,23 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 			}
 		}
 
+		// 计算修正均分差
+		slices.Sort[[]int](fvArr)
+		slices.Sort[[]int](fvArr2)
+		index, _ := slices.BinarySearch[[]int](fvArr, selfFV)
+		fvSum1 -= fvArr[index]
+		fvSum2 -= fvArr2[index]
+		fixDiff += (fvSum1 - fvSum2) / 6
+		if fvSum1 > fvSum2{
+			fixCount++
+		}
+
 		result = append(result, tmp)
 	}
 	if len(matchIds) != 0 {
 		diff /= len(matchIds)
 		svd /= len(matchIds)
+		fixDiff /= len(matchIds)
 	}
 	return
 }

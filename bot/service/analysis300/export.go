@@ -60,7 +60,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		return
 	}
 
-	rs, diff, svd, fvRange, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	rs, diff, svd, fixDiff, fixCount, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
 	if len(rs) == 0 {
 		return "", errors.New("查询不到任何战绩")
 	}
@@ -69,7 +69,10 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	cnt1 := 0
 	cnt2 := 0
 	diff2 := 0
+	fvRange := [2]int{2500, 0}
 	for i := range rs {
+		fvRange[0] = min(rs[i][3], fvRange[0])
+		fvRange[1] = min(rs[i][3], fvRange[1])
 		if rs[i][2] == 1 {
 			win++
 			if rs[i][0] > rs[i][1] {
@@ -94,11 +97,15 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	}
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d，团分跨度：%d - %d，时间跨度：%s - %s\n", name, len(rs), fvRange[0], fvRange[1], time.Unix(int64(timeRange[0]), 0).Format("20060102"), time.Unix(int64(timeRange[1]), 0).Format("20060102"))
 	msg += fmt.Sprintf("当前团分：%d，胜率：%.1f%%\n", fvNow, float32(win)/float32(win+lose)*100)
-	msg += fmt.Sprintf("总记录 %d 局中有 %d 局(%.1f%%) 己方均分高于对面\n", len(rs), cnt1+lose-cnt2, float32(cnt1+lose-cnt2)/float32(len(rs))*100)
-	msg += fmt.Sprintf("%d 胜场中有 %d 场(%.1f%%)的己方均分高于对面\n", win, cnt1, float32(cnt1)/float32(win)*100)
-	msg += fmt.Sprintf("%d 负场中有 %d 场(%.1f%%)的己方均分低于对面\n", lose, cnt2, float32(cnt2)/float32(lose)*100)
 	msg += fmt.Sprintf("玩家分相对场均分水平：%d\n", diff)
+	msg += fmt.Sprintf("总记录 %d 局中有 %d 局(%.1f%%) 己方均分高于对面，除开自身与对位有 %d 局 (%.1f%%) 己方均分高于对面\n",
+		len(rs),
+		cnt1+lose-cnt2,
+		float32(cnt1+lose-cnt2)/float32(len(rs))*100,
+		fixCount,
+		float32(fixCount)/float32(len(rs))*100)
 	msg += fmt.Sprintf("己方均分相对敌方均分水平：%d\n", diff2)
+	msg += fmt.Sprintf("己方均分相对敌方均分水平(除外自身与对位)：%d\n", fixDiff)
 	msg += fmt.Sprintf("己方团分离散度相对敌方团分离散度水平：%d\n", svd)
 
 	stage1 := analysis.ExtractByFVAdvanced(1000, 1500, rs)

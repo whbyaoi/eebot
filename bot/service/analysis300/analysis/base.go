@@ -464,3 +464,11 @@ func ExtractByFVAdvanced(start, end int, result [][5]int) (cnt [2]int) {
 	}
 	return
 }
+
+func Sum[T []any](s T, get func(e any) float64) float64 {
+	rs := 0.0
+	for i := range s {
+		rs += get(s[i])
+	}
+	return rs
+}
