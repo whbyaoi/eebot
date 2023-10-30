@@ -5,6 +5,7 @@ import (
 	"eebot/bot/service/analysis300/db"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -56,14 +57,15 @@ var MatchIntervalKey = "300analysis_shuffle"
 // UpdateHeroOfPlayerRank 更新某个英雄数据水平
 func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	var players []db.Player
-	db.SqlDB.Model(db.Player{}).Where("hero_id = ?", HeroID).Find(&players)
+	start := time.Now().Unix() - ExpiryDate
+	db.SqlDB.Model(db.Player{}).Where("hero_id = ? and create_time > ?", HeroID, start).Find(&players)
 	sort.Slice(players, func(i, j int) bool {
 		return players[i].CreateTime >= players[j].CreateTime
 	})
 
-	idToRecord := map[uint64][]db.Player{}
+	idToRecord := map[uint64][]*db.Player{}
 	for i := range players {
-		idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], players[i])
+		idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], &players[i])
 	}
 	data := getHeroOfPlayerData(idToRecord, fv)
 
@@ -123,9 +125,9 @@ func UpdateMatchInterval(PlayerID uint64) {
 // getHeroOfPlayerData 计算玩家的英雄数据水平
 //
 //	data: playerID-HeroDataName-value
-func getHeroOfPlayerData(raw map[uint64][]db.Player, fv int) (data map[uint64]map[string]float64) {
+func getHeroOfPlayerData(raw map[uint64][]*db.Player, fv int) (data map[uint64]map[string]float64) {
 
-	addValue := func(v [28]float64, me db.Player) [28]float64 {
+	addValue := func(v [28]float64, me *db.Player) [28]float64 {
 		// 过滤低于阈值的战绩
 		if me.FV < fv {
 			return v

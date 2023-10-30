@@ -12,6 +12,8 @@ import (
 
 var PlayerListKey = "300analysis:player_list"
 
+var ExpiryDate int64 = 30 * 24 * 60 * 60
+
 // WinOrLoseAnalysis 胜负分析
 //
 //	return: result [][3]int
@@ -118,7 +120,8 @@ func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, f
 //		result[*][28] -- 总场次
 func HeroAnalysis(PlayerID uint64, fv int) (result [][29]float64, total uint64) {
 	var players []db.Player
-	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and fv >= ?", PlayerID, fv).Find(&players)
+	start := time.Now().Unix() - ExpiryDate
+	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and fv >= ? and create_time > ?", PlayerID, fv, start).Find(&players)
 	sort.Slice(players, func(i, j int) bool {
 		return players[i].CreateTime >= players[j].CreateTime
 	})
@@ -245,7 +248,8 @@ func getMatchIdsAndSides(PlayerID uint64) (matchIds []string, sides []int) {
 
 func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 	if id, ok := db.HeroNameToID[HeroName]; ok {
-		err = db.SqlDB.Model(db.Player{}).Where("hero_id = ?", id).Find(&players).Error
+		start := time.Now().Unix() - ExpiryDate
+		err = db.SqlDB.Model(db.Player{}).Where("hero_id = ? and create_time > ?", id, start).Find(&players).Error
 		return
 	}
 	return nil, fmt.Errorf("不存在 %s 该英雄", HeroName)

@@ -199,7 +199,7 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[hero], fv)
 	rs, total := analysis.HeroAnalysis(PlayerID, fv)
 	_, rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
-	msg += fmt.Sprintf("昵称：%s，总场次：%d\n", name, total)
+	msg += fmt.Sprintf("昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
 	for i := range rs {
 		if db.HeroIDToName[int(rs[i][0])] != hero {
 			continue
@@ -238,7 +238,7 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		return
 	}
 	rs, total := analysis.HeroAnalysis(PlayerID, 0)
-	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d\n", name, total)
+	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
 	for i := range rs {
 		if i >= 5 {
 			break
@@ -246,7 +246,8 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)
 		_, rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
 		players := []db.Player{}
-		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ?", PlayerID, rs[i][0]).Find(&players)
+		start := time.Now().Unix() - analysis.ExpiryDate
+		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ? and create_time > ?", PlayerID, rs[i][0], start).Find(&players)
 		win := 0
 		for j := range players {
 			if players[j].Result == 1 || players[j].Result == 3 {
@@ -346,7 +347,7 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 		return
 	}
 
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d\n", HeroName, fv, total)
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天战绩)\n", HeroName, fv, total)
 	for i := range result {
 		idStr := result[i].Member.(string)
 		id, _ := strconv.ParseUint(idStr, 10, 64)
