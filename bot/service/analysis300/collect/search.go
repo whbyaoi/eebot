@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -109,6 +110,17 @@ func SearchRoleID(name string) (RoleID uint64, err error) {
 			err = fmt.Errorf("不存在 %s 角色", name)
 		}
 	}()
+	if strings.HasPrefix(name, MaskPrefix) {
+		id, err := strconv.ParseInt(strings.TrimPrefix(name, MaskPrefix), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("无法将%s转换为int类型", strings.TrimPrefix(name, MaskPrefix))
+		}
+		_, err = SearchMatches(uint64(id), 1, 1)
+		if err != nil {
+			return 0, fmt.Errorf("查询id:%s对应的角色失败：%s", name, err.Error())
+		}
+		return uint64(id), nil
+	}
 	values := url.Values{}
 	values.Set("AccountID", "0")
 	values.Set("Guid", "0")
@@ -144,11 +156,13 @@ func SearchRoleID(name string) (RoleID uint64, err error) {
 	return
 }
 
+var MaskPrefix = "id:"
+
 // SearchName 通过url获取名称
 func SearchName(RoleID uint64) (Name string) {
 	defer func() {
 		if Name == "*******" {
-			Name = fmt.Sprintf("id:%d", RoleID)
+			Name = fmt.Sprintf("%s%d", MaskPrefix, RoleID)
 		}
 	}()
 	name, err := db.RDB.Get(Ctx, fmt.Sprintf("%s_%d", PlayerIDToNameKey, RoleID)).Result()
