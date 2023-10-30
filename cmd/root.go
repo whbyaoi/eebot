@@ -25,6 +25,7 @@ func init() {
 	rootCmd.AddCommand(CollectDataCmd)
 	rootCmd.AddCommand(RefreshIntervalCmd)
 	rootCmd.AddCommand(AddTimestampCmd)
+	rootCmd.AddCommand(TranTimestampCmd)
 }
 
 func Execute() error {

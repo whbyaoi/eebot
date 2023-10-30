@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"eebot/bot/router"
 	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
@@ -68,5 +69,24 @@ var AddTimestampCmd = &cobra.Command{
 				fmt.Printf("%d over\n", i+1)
 			}
 		}
+	},
+}
+
+var TranTimestampCmd = &cobra.Command{
+	Use:   "300-tran",
+	Short: "",
+	Run: func(cmd *cobra.Command, args []string) {
+		db.InitRedis()
+		db.InitMysql()
+
+		playerIDs, err := db.RDB.LRange(context.Background(), "300analysis:player_list", 0, -1).Result()
+		if err != nil {
+			return
+		}
+		var data []interface{}
+		for i := range playerIDs {
+			data = append(data, playerIDs[i])
+		}
+		_ = db.RDB.SAdd(context.Background(), "300analysis:player_set", data...)
 	},
 }

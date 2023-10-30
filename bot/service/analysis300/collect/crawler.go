@@ -220,7 +220,7 @@ func (c *crawler) IncrementalCrawl() {
 			time.Sleep(now.Sub(end))
 			g.CrawlLogger.Infof("增量更新开始")
 		}
-		playerID, err := db.RDB.LPop(Ctx, PlayerListKey).Result()
+		playerID, err := db.RDB.SPop(Ctx, PlayerListKey).Result()
 		if err != nil {
 			g.CrawlLogger.Error("增量更新错误: redis list pop, ", err.Error())
 			break
