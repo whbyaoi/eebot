@@ -212,6 +212,14 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 // IncrementalCrawl 增量更新
 func (c *crawler) IncrementalCrawl() {
 	for {
+		now := time.Now()
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+		end := time.Date(now.Year(), now.Month(), now.Day(), 9, 0, 0, 0, time.Local)
+		if !(now.After(start) && now.Before(end)) {
+			g.CrawlLogger.Infof("增量更新停止: 当前时间%s不在更新时间段%s-%s内", now.Format(time.TimeOnly), start.Format(time.TimeOnly), end.Format(time.TimeOnly))
+			time.Sleep(now.Sub(end))
+			g.CrawlLogger.Infof("增量更新开始")
+		}
 		playerID, err := db.RDB.LPop(Ctx, PlayerListKey).Result()
 		if err != nil {
 			g.CrawlLogger.Error("增量更新错误: redis list pop, ", err.Error())

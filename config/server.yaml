@@ -11,4 +11,5 @@ analysis:
     databse: 300match
   redis:
     addr: localhost:6379
+    password:
     db: 0

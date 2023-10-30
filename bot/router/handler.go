@@ -4,6 +4,7 @@ import (
 	"eebot/bot/model"
 	"eebot/bot/router/message"
 	"eebot/g"
+	"eebot/ws"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -68,6 +69,21 @@ func messageHandler(b []byte) (err error) {
 		err = message.PrivateMessageHub(privateMessage)
 	}
 
+	// 推送
+	if g.Config.GetBool("report") {
+		go func() {
+			ws.Send(model.Request{
+				Action: "send_private_msg",
+				Params: model.PrivateMessageParams{
+					GroupMessageParams: model.GroupMessageParams{
+						Message:    fmt.Sprintf("%s: 处理 %d 群聊消息 %s 完毕", time.Now().Format(time.TimeOnly), source, messageBase.RawMessage),
+						AutoEscape: false,
+					},
+					UserID: 392414148,
+				},
+			})
+		}()
+	}
 	if err != nil {
 		g.Logger.Errorf("处理来自 %d 的消息 %s 时错误：%s，耗时 %v", source, messageBase.RawMessage, err.Error(), time.Since(t0))
 	} else {
