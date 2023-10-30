@@ -72,7 +72,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	fvRange := [2]int{2500, 0}
 	for i := range rs {
 		fvRange[0] = min(rs[i][3], fvRange[0])
-		fvRange[1] = min(rs[i][3], fvRange[1])
+		fvRange[1] = max(rs[i][3], fvRange[1])
 		if rs[i][2] == 1 {
 			win++
 			if rs[i][0] > rs[i][1] {

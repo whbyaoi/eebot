@@ -166,7 +166,6 @@ func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEner
 	return
 }
 
-
 // WinOrLoseAnalysisAdvanced 进阶输赢分析(是否匹配当前分数段)
 //
 //	jjl[0-13]: 14个人的jjl
@@ -211,7 +210,7 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 				fvArr = append(fvArr, localPlayers[j].FV)
 			} else {
 				fvSum2 += localPlayers[j].FV
-				fvArr2 = append(fvArr, localPlayers[j].FV)
+				fvArr2 = append(fvArr2, localPlayers[j].FV)
 			}
 		}
 		tmp[0] = fvSum1 / 7
@@ -270,7 +269,7 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 		fvSum1 -= fvArr[index]
 		fvSum2 -= fvArr2[index]
 		fixDiff += (fvSum1 - fvSum2) / 6
-		if fvSum1 > fvSum2{
+		if fvSum1 > fvSum2 {
 			fixCount++
 		}
 
