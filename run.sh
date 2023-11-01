@@ -1,5 +1,6 @@
 cd /eebot/src/eebot
 go build .
-./eebot/stop.sh
-mv /eebot /eebot/
-./eebot/start.sh
+cd /eebot
+./stop.sh
+mv /eebot/src/eebot/eebot /eebot/
+./start.sh
