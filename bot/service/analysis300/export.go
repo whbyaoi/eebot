@@ -583,17 +583,27 @@ func ExportActiveAnalysis() (msg string, err error) {
 	}
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{Title: "过去七天活跃玩家数量及分布", Subtitle: fmt.Sprintf("玩家总数：%d", len(players))}),
+		charts.WithTitleOpts(opts.Title{
+			Title:    "过去七天活跃玩家数量及分布(仅供参考)",
+			Subtitle: fmt.Sprintf("玩家总数：%d", len(players)),
+			Top:      "0%",
+			Left:     "10%",
+		}),
+		charts.WithLegendOpts(
+			opts.Legend{
+				Show: false,
+			},
+		),
 	)
 	pie.AddSeries("pie", items).
 		SetSeriesOptions(charts.WithLabelOpts(
 			opts.Label{
 				Show:      true,
-				Formatter: "{c}",
+				Formatter: "{b}: {c}",
 			}),
 			charts.WithPieChartOpts(
 				opts.PieChart{
-					RoseType: "area",
+					RoseType: "radius",
 					Radius:   []string{"30%", "75%"},
 				},
 			),
