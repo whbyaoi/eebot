@@ -537,6 +537,84 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
+func ExportActiveAnalysis() (msg string, err error) {
+	now := time.Now()
+	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	type result struct {
+		PlayerID uint64
+		FV       int
+	}
+	players := []result{}
+	db.SqlDB.Raw("select player_id, max(fv) fv from players where create_time > ? group by player_id", t0.Unix()-7*24*60*60).Scan(&players)
+
+	ranges := []string{"0-1000", "1000-1300", "1300-1500", "1500-1600", "1600-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2100", "2100-2200", "2200-"}
+	count := []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range players {
+		fv := players[i].FV
+		if fv < 1000 {
+			count[0]++
+		} else if 1000 <= fv && fv < 1300 {
+			count[1]++
+		} else if 1300 <= fv && fv < 1500 {
+			count[2]++
+		} else if 1500 <= fv && fv < 1600 {
+			count[3]++
+		} else if 1600 <= fv && fv < 1700 {
+			count[4]++
+		} else if 1700 <= fv && fv < 1800 {
+			count[5]++
+		} else if 1800 <= fv && fv < 1900 {
+			count[6]++
+		} else if 1900 <= fv && fv < 2000 {
+			count[7]++
+		} else if 2000 <= fv && fv < 2100 {
+			count[8]++
+		} else if 2100 <= fv && fv < 2200 {
+			count[9]++
+		} else if 2200 <= fv {
+			count[10]++
+		}
+	}
+
+	items := make([]opts.PieData, 0)
+	for i := range count {
+		name := fmt.Sprintf("%s(%.2f%%)", ranges[i], float64(count[i])/float64(len(players))*100)
+		items = append(items, opts.PieData{Name: name, Value: count[i]})
+	}
+	pie := charts.NewPie()
+	pie.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "过去七天活跃玩家数量及分布", Subtitle: fmt.Sprintf("玩家总数：%d", len(players))}),
+	)
+	pie.AddSeries("pie", items).
+		SetSeriesOptions(charts.WithLabelOpts(
+			opts.Label{
+				Show:      true,
+				Formatter: "{c}",
+			}),
+			charts.WithPieChartOpts(
+				opts.PieChart{
+					RoseType: "area",
+					Radius:   []string{"30%", "75%"},
+				},
+			),
+		)
+
+	f, err := os.Create("./files/active.html")
+	if err != nil {
+		return "", err
+	}
+	err = pie.Render(f)
+	if err != nil {
+		return "", err
+	}
+	err = SavePNG("./files/active")
+	if err != nil {
+		return "", err
+	}
+	abs, _ := filepath.Abs("./files/active")
+	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
+}
+
 func SavePNG(file string) (err error) {
 	abs, _ := filepath.Abs(file)
 

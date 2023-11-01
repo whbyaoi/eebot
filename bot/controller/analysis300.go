@@ -51,7 +51,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	}
 	defer mutexes[strings.Join(rawMessageSlice, "")].Unlock()
 
-	if svc != "help" && svc != "帮助" && svc != "g" && svc != "top" {
+	if svc != "help" && svc != "菜单" && svc != "g" && svc != "top" && svc != "active" {
 		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
@@ -109,6 +109,8 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			suffix, err = analysis300.ExportPKAnalysis(name, assgin)
 		}
+	case "active":
+		suffix, err = analysis300.ExportActiveAnalysis()
 	case "top": // top10
 		var fv int
 		if len(rawMessageSlice) > 3 {
@@ -141,7 +143,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			break
 		}
 		suffix += tmp
-	case "help": // 帮助
+	case "help", "菜单": // 帮助
 		suffix += "指令一览(详见个人空间)：\n"
 		suffix += "n 玩家 --- 胜负分析\n"
 		suffix += "t 玩家 --- 开黑分析\n"
