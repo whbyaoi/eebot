@@ -72,7 +72,6 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			err = errors.New("无权使用该命令")
 		}
-	case "h": // 英雄
 		assgin := ""
 		if len(rawMessageSlice) > 3 {
 			assgin = rawMessageSlice[3]
@@ -88,6 +87,23 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			err = errors.New("该指令必须指定英雄")
 		} else {
 			suffix, err = analysis300.ExportAssignHeroAnalysisAdvanced(name, assgin, fv)
+		}
+	case "h": // 英雄
+		assgin := ""
+		if len(rawMessageSlice) > 3 {
+			assgin = rawMessageSlice[3]
+		}
+		var fv int
+		if len(rawMessageSlice) > 4 {
+			fv, err = strconv.Atoi(rawMessageSlice[4])
+			if err != nil {
+				fv = 0
+			}
+		}
+		if assgin == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportAssignHeroAnalysisAdvancedV2(name, assgin, fv)
 		}
 	case "g": // 全局英雄
 		if name == "" {

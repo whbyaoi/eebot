@@ -161,6 +161,11 @@ var MaskPrefix = "id:"
 // SearchName 通过url获取名称
 func SearchName(RoleID uint64) (Name string) {
 	defer func() {
+		if r := recover(); r != nil {
+			Name = "未知错误"
+		}
+	}()
+	defer func() {
 		if Name == "*******" {
 			Name = fmt.Sprintf("%s%d", MaskPrefix, RoleID)
 		}

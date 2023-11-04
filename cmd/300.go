@@ -6,8 +6,11 @@ import (
 	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
+	"eebot/g"
 	"eebot/ws"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -20,6 +23,9 @@ var Analysis300Cmd = &cobra.Command{
 		db.InitRedis()
 		db.InitMysql()
 		collect.InitCrawler()
+		if g.Config.GetBool("dev") {
+			go func() { http.ListenAndServe("0.0.0.0:8090", nil) }()
+		}
 		for {
 			if err := ws.InitWebsocket(); err != nil {
 				continue

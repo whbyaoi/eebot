@@ -117,7 +117,7 @@ func MergeImportance(weights HeroTypeWeight) (rs DataWeight) {
 }
 
 // 各英雄权重类别系数
-var HeroNameToID = map[string]HeroTypeWeight{
+var HeroFactor = map[string]HeroTypeWeight{
 	"雪菜":        {0.9, 0.1, 0, 0, 0},
 	"司波达也":      {0, 0, 0, 0, 1},
 	"赛贝丝":       {0, 0, 0, 0, 1},

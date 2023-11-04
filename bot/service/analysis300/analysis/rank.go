@@ -70,6 +70,11 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	data := getHeroOfPlayerData(idToRecord, fv)
 
 	prefix := HeroOfPlayerRankKey + fmt.Sprintf("_%s_%d:", db.HeroIDToName[HeroID], fv)
+	// 清空
+	for _, name := range HeroDataToName {
+		key := prefix + name
+		db.RDB.Del(collect.Ctx, key)
+	}
 	for id, detail := range data {
 		for k, score := range detail {
 			key := prefix + k
@@ -78,14 +83,14 @@ func UpdateHeroOfPlayerRank(HeroID int, fv int) {
 	}
 
 	// 计算综合水平
-	factors := MergeImportance(HeroNameToID[db.HeroIDToName[HeroID]])
+	factors := MergeImportance(HeroFactor[db.HeroIDToName[HeroID]])
 	for id := range data {
 		rank, _ := GetHeroOfPlayerRankWithoutOverallScore(HeroID, id, fv)
 		overallScore := 0.0
 		for i, factor := range factors {
 			overallScore += rank[i] * factor
 		}
-		overallScore = overallScore * (0.9 + min(data[id]["total"], MaxPlayTimes)/MaxPlayTimes*0.1) * (0.7 + rank[1]/100*0.3)
+		overallScore = overallScore * (0.9 + min(data[id]["total"], MaxPlayTimes)/MaxPlayTimes*0.1) * (0.7 + rank[2]/100*0.3)
 		key := prefix + HeroDataToName[28]
 		db.RDB.ZAdd(collect.Ctx, key, redis.Z{Score: overallScore, Member: id})
 	}

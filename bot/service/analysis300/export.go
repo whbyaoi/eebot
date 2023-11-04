@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -232,6 +231,50 @@ func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg str
 	return
 }
 
+// ExportAssignHeroAnalysisAdvancedV2 分析fv团分上的玩家的英雄数据
+func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg string, err error) {
+	PlayerID, err := collect.SearchRoleID(name)
+	if err != nil {
+		return
+	}
+	if _, ok := db.HeroNameToID[hero]; !ok {
+		return "未知英雄 " + hero, nil
+	}
+	heroDataSlice, total := analysis.GetRankFromPlayers(db.HeroNameToID[hero], fv, []uint64{PlayerID})
+	heroData := heroDataSlice[PlayerID]
+	msg += fmt.Sprintf("昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
+	msg += fmt.Sprintf("英雄：%s\n", hero)
+	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
+	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
+	msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", heroData.WinRate*100, heroData.Rank.WinRate)
+	msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", heroData.AvgUsedTime/60, heroData.Rank.AvgUsedTime)
+	msg += fmt.Sprintf("场均补刀：%.1f (%.1f%%)\n", heroData.AvgHit, heroData.Rank.AvgHit)
+	msg += fmt.Sprintf("场均每分补刀：%.2f (%.1f%%)\n", heroData.AvgHitPerMinite, heroData.Rank.AvgHitPerMinite)
+	msg += fmt.Sprintf("场均kda：%.1f (%.1f%%) / %.1f (%.1f%%) / %.1f (%.1f%%)\n",
+		heroData.AvgKill, heroData.Rank.AvgKill, heroData.AvgDeath, heroData.Rank.AvgDeath, heroData.AvgAssist, heroData.Rank.AvgAssist)
+	msg += fmt.Sprintf("场均每分kda：%.2f (%.1f%%) / %.2f (%.1f%%) / %.2f (%.1f%%)\n",
+		heroData.AvgKillPerMinite, heroData.Rank.AvgKillPerMinite,
+		heroData.AvgDeathPerMinite, heroData.Rank.AvgDeathPerMinite,
+		heroData.AvgAssistPerMinite, heroData.Rank.AvgAssistPerMinite)
+	msg += fmt.Sprintf("场均推塔：%.1f (%.1f%%)\n", heroData.AvgTower, heroData.Rank.AvgTower)
+	msg += fmt.Sprintf("场均每分推塔：%.2f (%.1f%%)\n", heroData.AvgTowerPerMinite, heroData.Rank.AvgTowerPerMinite)
+	msg += fmt.Sprintf("场均插/排眼：%.2f (%.1f%%) / %.2f (%.1f%%)\n",
+		heroData.AvgPutEye, heroData.Rank.AvgPutEye,
+		heroData.AvgDestryEye, heroData.Rank.AvgDestryEye)
+	msg += fmt.Sprintf("场均每分插/排眼：%.3f (%.1f%%) / %.3f (%.1f%%)\n",
+		heroData.AvgPutEyePerMinite, heroData.Rank.AvgPutEyePerMinite,
+		heroData.AvgDestryEyePerMinite, heroData.Rank.AvgDestryEyePerMinite)
+	msg += fmt.Sprintf("场均经济：%.1f (%.1f%%)\n", heroData.AvgMoney, heroData.Rank.AvgMoney)
+	msg += fmt.Sprintf("场均每分经济：%.1f (%.1f%%)\n", heroData.AvgMoneyPerMinite, heroData.Rank.AvgMoneyPerMinite)
+	msg += fmt.Sprintf("场均输出：%.1f (%.1f%%)\n", heroData.AvgMakeDamage, heroData.Rank.AvgMakeDamage)
+	msg += fmt.Sprintf("场均每分输出：%.1f (%.1f%%)\n", heroData.AvgMakeDamagePerMinite, heroData.Rank.AvgMakeDamagePerMinite)
+	msg += fmt.Sprintf("场均承伤：%.1f (%.1f%%)\n", heroData.AvgTakeDamage, heroData.Rank.AvgTakeDamage)
+	msg += fmt.Sprintf("场均每分承伤：%.1f (%.1f%%)\n", heroData.AvgTakeDamagePerMinite, heroData.Rank.AvgTakeDamagePerMinite)
+	msg += fmt.Sprintf("场均经济转换率：%.1f%% (%.1f%%)\n", heroData.AvgMoneyConversionRate, heroData.Rank.AvgMoneyConversionRate)
+	msg += fmt.Sprintf("综合评分：%d (%.1f%%)\n", uint64(heroData.Score), heroData.Rank.Score)
+	return
+}
+
 func ExportLikeAnalysis(name string) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
 	if err != nil {
@@ -341,17 +384,11 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}
 
-	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[HeroName], fv)
-	result, total, err := analysis.GetTopRank(db.HeroNameToID[HeroName], fv)
-	if err != nil {
-		return
-	}
+	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
 
 	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天战绩)\n", HeroName, fv, total)
-	for i := range result {
-		idStr := result[i].Member.(string)
-		id, _ := strconv.ParseUint(idStr, 10, 64)
-		msg += fmt.Sprintf("%d、昵称：%s，评分：%.1f\n", i+1, collect.SearchName(id), result[i].Score)
+	for i := range data {
+		msg += fmt.Sprintf("%d、%s，评分：%.1f\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score)
 	}
 	return
 }
