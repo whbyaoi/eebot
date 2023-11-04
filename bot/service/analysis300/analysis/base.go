@@ -265,6 +265,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 	}
 
 	allyInfo := map[uint64]int{}               // id-cnt
+	enermyInfo := map[uint64]int{}
 	matchToPlayers := map[string][]db.Player{} // match_id - players
 	for i := range matchIds {
 		// 找到这局的玩家
@@ -275,7 +276,12 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			if localPlayers[j].PlayerID == PlayerID || localPlayers[j].Side != sides[i] {
 				continue
 			}
-			allyInfo[localPlayers[j].PlayerID]++
+			if localPlayers[j].Side == sides[i]{
+				allyInfo[localPlayers[j].PlayerID]++
+			} else{
+				enermyInfo[localPlayers[j].PlayerID]++
+			}
+			
 		}
 	}
 
@@ -290,7 +296,8 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			// 包含在频次top10中
 			// 并且频次超过3把或者场次占比超过2%
 			// 则认为是开黑队友
-			if arr[i][0] == id && (arr[i][1] > 3 || (float64(arr[i][1])/float64(len(matchIds))) >= 0.02) {
+			cnt := arr[i][1] - uint64(enermyInfo[id])
+			if arr[i][0] == id && cnt >= 3 {
 				return true
 			}
 		}
