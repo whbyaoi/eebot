@@ -241,6 +241,9 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 		return "未知英雄 " + hero, nil
 	}
 	heroDataSlice, total := analysis.GetRankFromPlayers(db.HeroNameToID[hero], fv, []uint64{PlayerID})
+	if _, ok := heroDataSlice[PlayerID]; !ok {
+		return fmt.Sprintf("%s 最近30天无 %s 战绩", name, hero), nil
+	}
 	heroData := heroDataSlice[PlayerID]
 	msg += fmt.Sprintf("昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
@@ -386,7 +389,7 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
 
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天战绩)\n", HeroName, fv, total)
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
 	for i := range data {
 		msg += fmt.Sprintf("%d、%s，评分：%.1f\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score)
 	}
