@@ -273,7 +273,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
 		matchToPlayers[matchIds[i]] = localPlayers
 		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID || localPlayers[j].Side != sides[i] {
+			if localPlayers[j].PlayerID == PlayerID {
 				continue
 			}
 			if localPlayers[j].Side == sides[i]{
