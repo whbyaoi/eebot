@@ -245,7 +245,7 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 		return fmt.Sprintf("%s 最近30天无 %s 战绩", name, hero), nil
 	}
 	heroData := heroDataSlice[PlayerID]
-	msg += fmt.Sprintf("昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
+	msg += fmt.Sprintf("昵称：%s(只会计算近30天战绩)\n", name)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
 	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))

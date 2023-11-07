@@ -309,7 +309,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			if play.FV < fv {
 				break
 			}
-			if heroData.Total > 50 {
+			if heroData.Total >= 50 {
 				break
 			}
 			heroData.Total++
