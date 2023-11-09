@@ -79,7 +79,7 @@ func messageHandler(b []byte) (err error) {
 						Message:    fmt.Sprintf("%s: 处理 %d 群聊消息 %s 完毕", time.Now().Format(time.TimeOnly), source, messageBase.RawMessage),
 						AutoEscape: false,
 					},
-					UserID: 392414148,
+					UserID: g.Config.GetInt64("report-id"),
 				},
 			})
 		}()
