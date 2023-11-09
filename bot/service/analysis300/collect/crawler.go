@@ -5,6 +5,7 @@ import (
 	"eebot/g"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
@@ -142,11 +143,16 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 	total := 0
 	t0 := time.Now()
 	idMap := map[uint64]struct{}{}
-	g.CrawlLogger.Infof("开始爬取玩家 %s 战绩", name)
+	defer func() {
+		if r := recover(); r != nil {
+			g.CrawlLogger.Errorf("爬取玩家 %s(%d) 战绩时发生错误，%s", name, PlayerID, string(debug.Stack()))
+		}
+	}()
+	g.CrawlLogger.Infof("开始爬取玩家 %s(%d) 战绩", name, PlayerID)
 	for page := 1; ; page++ {
 		matches, err := SearchMatches(PlayerID, 1, page)
 		if err != nil || len(matches) == 0 {
-			g.CrawlLogger.Infof("页面 %d，玩家 %s 无新战绩", page, name)
+			g.CrawlLogger.Infof("页面 %d，玩家 %s(%d) 无新战绩", page, name, PlayerID)
 			break
 		}
 		// 缓存最新id-name
@@ -172,7 +178,7 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 				}
 				resp := <-req.RespChan
 				if resp.Err != nil {
-					g.CrawlLogger.Errorf("爬取 %s 玩家 %s 战绩时错误：%s", name, matches[i].MatchID, resp.Err.Error())
+					g.CrawlLogger.Errorf("爬取 %s(%d) 玩家 %s 战绩时错误：%s", name, PlayerID, matches[i].MatchID, resp.Err.Error())
 					return
 				}
 				if resp.Data != nil {
@@ -183,13 +189,13 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 		}
 		wg.Wait()
 		if len(saveMatches) == 0 {
-			g.CrawlLogger.Infof("页面 %d，玩家 %s 无新战绩", page, name)
+			g.CrawlLogger.Infof("页面 %d，玩家 %s(%d) 无新战绩", page, name, PlayerID)
 			break
 		}
 		// 保存战绩
 		err = db.SqlDB.Session(&gorm.Session{FullSaveAssociations: true}).Create(&saveMatches).Error
 		if err != nil {
-			g.CrawlLogger.Errorf("保存玩家 %d 战绩时错误：%s", PlayerID, err.Error())
+			g.CrawlLogger.Errorf("保存玩家 %s(%d) 战绩时错误：%s", name, PlayerID, err.Error())
 			continue
 		}
 		total += len(saveMatches)
@@ -202,7 +208,7 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 			}
 		}
 	}
-	g.CrawlLogger.Infof("玩家 %s 战绩查询完毕，总计 %d 条新战绩，用时 %v", name, total, time.Since(t0))
+	g.CrawlLogger.Infof("玩家 %s(%d) 战绩查询完毕，总计 %d 条新战绩，用时 %v", name, PlayerID, total, time.Since(t0))
 	for id := range idMap {
 		ids = append(ids, id)
 	}
