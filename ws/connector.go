@@ -6,8 +6,10 @@ package ws
 
 import (
 	"eebot/g"
+	"fmt"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 
 	"github.com/gorilla/websocket"
 )
@@ -35,6 +37,12 @@ func InitWebsocket() (err error) {
 }
 
 func Read(msgHandle func([]byte)) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			g.Logger.Errorf("panic: %s", string(debug.Stack()))
+			err = fmt.Errorf("panic: %s", string(debug.Stack()))
+		}
+	}()
 	for {
 		_, message, err := WsClient.ReadMessage()
 		if err != nil {
