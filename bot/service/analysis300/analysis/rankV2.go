@@ -36,7 +36,7 @@ type HeroData struct {
 	ActualTotal            float64 // 实际场次
 	Total                  float64 // 参与计算场次
 	Win                    float64 // 胜场
-	WinRate                float64 // 胜率
+	WinRate                float64 // 胜率 0.xxxx
 	AvgHit                 float64
 	AvgKill                float64
 	AvgDeath               float64
@@ -403,7 +403,7 @@ func getRank(HeroID int, fv int) ([]*HeroData, map[string][]*HeroData) {
 		}
 	}
 	for _, data := range heroDataSlice {
-		data.Score = data.Score * (0.9 + min(data.Total, MaxPlayTimes)/MaxPlayTimes*0.1) * (0.7 + data.Rank.WinRate/100*0.3)
+		data.Score = data.Score * (0.7 + min(data.Total, MaxPlayTimes)/MaxPlayTimes*0.3) * (0.7 + data.Rank.WinRate/100*0.3)
 	}
 	attr := "Score"
 	sort.Slice(heroDataSlice, func(i, j int) bool {

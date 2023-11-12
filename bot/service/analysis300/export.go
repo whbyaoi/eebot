@@ -485,7 +485,10 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	if _, ok := db.HeroNameToID[hero]; !ok {
 		return "未知英雄 " + name, nil
 	}
-	you, top1 := analysis.PKAnalysis(PlayerID, db.HeroNameToID[hero])
+	you, top1, err := analysis.PKAnalysis(PlayerID, db.HeroNameToID[hero])
+	if err != nil {
+		return
+	}
 
 	var indicators = []*opts.Indicator{
 		{Name: "胜率", Max: float32(max(you[0], top1[0]) * 1.2)},

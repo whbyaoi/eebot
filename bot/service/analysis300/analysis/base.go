@@ -3,10 +3,10 @@ package analysis
 import (
 	"eebot/bot/service/analysis300/db"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
-	"strconv"
 	"time"
 )
 
@@ -264,7 +264,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 		return
 	}
 
-	allyInfo := map[uint64]int{}               // id-cnt
+	allyInfo := map[uint64]int{} // id-cnt
 	enermyInfo := map[uint64]int{}
 	matchToPlayers := map[string][]db.Player{} // match_id - players
 	for i := range matchIds {
@@ -276,12 +276,12 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			if localPlayers[j].PlayerID == PlayerID {
 				continue
 			}
-			if localPlayers[j].Side == sides[i]{
+			if localPlayers[j].Side == sides[i] {
 				allyInfo[localPlayers[j].PlayerID]++
-			} else{
+			} else {
 				enermyInfo[localPlayers[j].PlayerID]++
 			}
-			
+
 		}
 	}
 
@@ -403,44 +403,45 @@ func FormatJson(m interface{}, indent bool) string {
 	return string(b)
 }
 
-func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [14]float64) {
-	UpdateHeroOfPlayerRank(HeroID, 0)
+func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [14]float64, err error) {
 	// 获取自己数据
-	scores, _, overallScore, _ := GetHeroOfPlayerRank(HeroID, PlayerID, 0)
-	selfData[0] = math.Round(scores[2]*100) / 100
-	selfData[1] = math.Round(scores[27]/60*100) / 100
-	selfData[2] = math.Round(scores[4]*100) / 100
-	selfData[3] = math.Round(scores[6]*100) / 100
-	selfData[4] = math.Round(scores[8]*100) / 100
-	selfData[5] = math.Round(scores[10]*100) / 100
-	selfData[6] = math.Round(scores[11]*100) / 100
-	selfData[7] = math.Round(scores[13]*100) / 100
-	selfData[8] = math.Round(scores[15]*100) / 100
-	selfData[9] = math.Round(scores[18]*100) / 100
-	selfData[10] = math.Round(scores[21]*100) / 100
-	selfData[11] = math.Round(scores[24]*100) / 100
-	selfData[12] = math.Round(scores[26]*100) / 100
-	selfData[13] = math.Round(float64(overallScore)*100) / 100
+	players, _ := GetRankFromPlayers(HeroID, 0, []uint64{PlayerID})
+	me, ok := players[PlayerID]
+	if !ok {
+		return selfData, otherData, errors.New("玩家无此数据")
+	}
+	selfData[0] = math.Round(me.WinRate) / 100
+	selfData[1] = math.Round(me.AvgUsedTime/60*100) / 100
+	selfData[2] = math.Round(me.AvgHitPerMinite*100) / 100
+	selfData[3] = math.Round(me.AvgKillPerMinite*100) / 100
+	selfData[4] = math.Round(me.AvgDeath*100) / 100
+	selfData[5] = math.Round(me.AvgAssistPerMinite*100) / 100
+	selfData[6] = math.Round(me.AvgTower*100) / 100
+	selfData[7] = math.Round(me.AvgPutEye*100) / 100
+	selfData[8] = math.Round(me.AvgDestryEye*100) / 100
+	selfData[9] = math.Round(me.AvgMoneyPerMinite*100) / 100
+	selfData[10] = math.Round(me.AvgMakeDamagePerMinite*100) / 100
+	selfData[11] = math.Round(me.AvgTakeDamagePerMinite*100) / 100
+	selfData[12] = math.Round(me.AvgMoneyConversionRate*100) / 100
+	selfData[13] = math.Round(me.Score*100) / 100
 
 	// 获取top1数据
-	top10, _, _ := GetTopRank(HeroID, 0)
-	top1IDStr := top10[0].Member.(string)
-	top1ID, _ := strconv.ParseUint(top1IDStr, 10, 64)
-	scores, _, overallScore, _ = GetHeroOfPlayerRank(HeroID, top1ID, 0)
-	otherData[0] = math.Round(scores[2]*100) / 100
-	otherData[1] = math.Round(scores[27]/60*100) / 100
-	otherData[2] = math.Round(scores[4]*100) / 100
-	otherData[3] = math.Round(scores[6]*100) / 100
-	otherData[4] = math.Round(scores[8]*100) / 100
-	otherData[5] = math.Round(scores[10]*100) / 100
-	otherData[6] = math.Round(scores[11]*100) / 100
-	otherData[7] = math.Round(scores[13]*100) / 100
-	otherData[8] = math.Round(scores[15]*100) / 100
-	otherData[9] = math.Round(scores[18]*100) / 100
-	otherData[10] = math.Round(scores[21]*100) / 100
-	otherData[11] = math.Round(scores[24]*100) / 100
-	otherData[12] = math.Round(scores[26]*100) / 100
-	otherData[13] = math.Round(float64(overallScore)*100) / 100
+	top, _ := GetRankFromTop(HeroID, 0, 1)
+	top1 := top[0]
+	otherData[0] = math.Round(top1.WinRate) / 100
+	otherData[1] = math.Round(top1.AvgUsedTime/60*100) / 100
+	otherData[2] = math.Round(top1.AvgHitPerMinite*100) / 100
+	otherData[3] = math.Round(top1.AvgKillPerMinite*100) / 100
+	otherData[4] = math.Round(top1.AvgDeath*100) / 100
+	otherData[5] = math.Round(top1.AvgAssistPerMinite*100) / 100
+	otherData[6] = math.Round(top1.AvgTower*100) / 100
+	otherData[7] = math.Round(top1.AvgPutEye*100) / 100
+	otherData[8] = math.Round(top1.AvgDestryEye*100) / 100
+	otherData[9] = math.Round(top1.AvgMoneyPerMinite*100) / 100
+	otherData[10] = math.Round(top1.AvgMakeDamagePerMinite*100) / 100
+	otherData[11] = math.Round(top1.AvgTakeDamagePerMinite*100) / 100
+	otherData[12] = math.Round(top1.AvgMoneyConversionRate*100) / 100
+	otherData[13] = math.Round(top1.Score*100) / 100
 	return
 }
 
