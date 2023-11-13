@@ -410,7 +410,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	if !ok {
 		return selfData, otherData, errors.New("玩家无此数据")
 	}
-	selfData[0] = math.Round(me.WinRate) / 100
+	selfData[0] = me.WinRate
 	selfData[1] = math.Round(me.AvgUsedTime/60*100) / 100
 	selfData[2] = math.Round(me.AvgHitPerMinite*100) / 100
 	selfData[3] = math.Round(me.AvgKillPerMinite*100) / 100
@@ -428,7 +428,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	// 获取top1数据
 	top, _ := GetRankFromTop(HeroID, 0, 1)
 	top1 := top[0]
-	otherData[0] = math.Round(top1.WinRate) / 100
+	otherData[0] = top1.WinRate
 	otherData[1] = math.Round(top1.AvgUsedTime/60*100) / 100
 	otherData[2] = math.Round(top1.AvgHitPerMinite*100) / 100
 	otherData[3] = math.Round(top1.AvgKillPerMinite*100) / 100
