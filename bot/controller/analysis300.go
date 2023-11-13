@@ -7,10 +7,13 @@ import (
 	"eebot/g"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 )
+
+var NoWait = []string{"help", "菜单", "g", "top", "active", "flush"}
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
@@ -51,7 +54,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	}
 	defer mutexes[strings.Join(rawMessageSlice, "")].Unlock()
 
-	if svc != "help" && svc != "菜单" && svc != "g" && svc != "top" && svc != "active" {
+	if !slices.Contains[[]string](NoWait, svc) {
 		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
@@ -127,6 +130,12 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		}
 	case "active":
 		suffix, err = analysis300.ExportActiveAnalysis()
+	case "flush":
+		if name == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportFlushTop(name)
+		}
 	case "top": // top10
 		var fv int
 		if len(rawMessageSlice) > 3 {
@@ -169,7 +178,8 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析\n"
-		suffix += "top 英雄名称 [可选]团分下限 - 高手前10"
+		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10"
+		suffix += "flush 英雄名称 - 刷新月榜"
 	default:
 		suffix = "未知指令：" + svc
 	}

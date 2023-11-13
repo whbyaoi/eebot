@@ -396,6 +396,20 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 	return
 }
 
+func ExportFlushTop(HeroName string)(msg string, err error) {
+	if _, ok := db.HeroNameToID[HeroName]; !ok {
+		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
+	}
+	data, _ := analysis.GetRankFromTop(db.HeroNameToID[HeroName], 0, 10)
+	for i := range data {
+		err = collect.CrawlPlayerByName(fmt.Sprintf("id:%d", data[i].PlayerID))
+		if err != nil{
+			return
+		}
+	}
+	return fmt.Sprintf("刷新 %s 月榜完毕", HeroName), nil
+}
+
 func ExportJJLWithTeamAnalysis(name string) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
 	if err != nil {

@@ -414,7 +414,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	selfData[1] = math.Round(me.AvgUsedTime/60*100) / 100
 	selfData[2] = math.Round(me.AvgHitPerMinite*100) / 100
 	selfData[3] = math.Round(me.AvgKillPerMinite*100) / 100
-	selfData[4] = math.Round(me.AvgDeath*100) / 100
+	selfData[4] = math.Round(me.AvgDeathPerMinite*100) / 100
 	selfData[5] = math.Round(me.AvgAssistPerMinite*100) / 100
 	selfData[6] = math.Round(me.AvgTower*100) / 100
 	selfData[7] = math.Round(me.AvgPutEye*100) / 100
@@ -432,7 +432,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	otherData[1] = math.Round(top1.AvgUsedTime/60*100) / 100
 	otherData[2] = math.Round(top1.AvgHitPerMinite*100) / 100
 	otherData[3] = math.Round(top1.AvgKillPerMinite*100) / 100
-	otherData[4] = math.Round(top1.AvgDeath*100) / 100
+	otherData[4] = math.Round(top1.AvgDeathPerMinite*100) / 100
 	otherData[5] = math.Round(top1.AvgAssistPerMinite*100) / 100
 	otherData[6] = math.Round(top1.AvgTower*100) / 100
 	otherData[7] = math.Round(top1.AvgPutEye*100) / 100
