@@ -289,8 +289,10 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		if i >= 5 {
 			break
 		}
-		analysis.UpdateHeroOfPlayerRank(int(rs[i][0]), 0)
-		_, rank, overallScore, _ := analysis.GetHeroOfPlayerRank(int(rs[i][0]), PlayerID, 0)
+		heroData, _ := analysis.GetRankFromPlayers(int(rs[i][0]), 0, []uint64{PlayerID})
+		if _, ok := heroData[PlayerID]; !ok {
+			return "", errors.New("异常错误")
+		}
 		players := []db.Player{}
 		start := time.Now().Unix() - analysis.ExpiryDate
 		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ? and create_time > ?", PlayerID, rs[i][0], start).Find(&players)
@@ -300,7 +302,14 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 				win++
 			}
 		}
-		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%d(%.1f%%)\n", i+1, db.HeroIDToName[int(rs[i][0])], len(players), float64(win)/float64(len(players))*100, overallScore, rank[28])
+		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%.1f(%.1f%%)\n",
+			i+1,
+			db.HeroIDToName[int(rs[i][0])],
+			len(players),
+			float64(win)/float64(len(players))*100,
+			heroData[PlayerID].Score,
+			heroData[PlayerID].Rank.Score,
+		)
 	}
 	return
 }
@@ -396,14 +405,14 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 	return
 }
 
-func ExportFlushTop(HeroName string)(msg string, err error) {
+func ExportFlushTop(HeroName string) (msg string, err error) {
 	if _, ok := db.HeroNameToID[HeroName]; !ok {
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}
 	data, _ := analysis.GetRankFromTop(db.HeroNameToID[HeroName], 0, 10)
 	for i := range data {
 		err = collect.CrawlPlayerByName(fmt.Sprintf("id:%d", data[i].PlayerID))
-		if err != nil{
+		if err != nil {
 			return
 		}
 	}

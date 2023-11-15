@@ -75,22 +75,6 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			err = errors.New("无权使用该命令")
 		}
-		assgin := ""
-		if len(rawMessageSlice) > 3 {
-			assgin = rawMessageSlice[3]
-		}
-		var fv int
-		if len(rawMessageSlice) > 4 {
-			fv, err = strconv.Atoi(rawMessageSlice[4])
-			if err != nil {
-				fv = 0
-			}
-		}
-		if assgin == "" {
-			err = errors.New("该指令必须指定英雄")
-		} else {
-			suffix, err = analysis300.ExportAssignHeroAnalysisAdvanced(name, assgin, fv)
-		}
 	case "h": // 英雄
 		assgin := ""
 		if len(rawMessageSlice) > 3 {
@@ -178,10 +162,10 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析\n"
-		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10"
+		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
 	default:
-		suffix = "未知指令：" + svc
+		suffix = "未知指令：" + svc + "\n 查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help"
 	}
 
 	if err == nil {

@@ -22,7 +22,7 @@ func GroupMessageHub(gm model.GroupMessage) (err error) {
 	default:
 		prefix := fmt.Sprintf("[CQ:at,qq=%d] \n", gm.UserID)
 		msg := "未知服务名：" + slices[1]
-		msg += "\n 目前支持服务名：300"
+		msg += "\n目前支持服务名：300"
 		service.Reply(msg, prefix, gm.GroupID)
 	}
 	return

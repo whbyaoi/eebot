@@ -35,8 +35,8 @@ type HeroData struct {
 	HeroID                 int
 	ActualTotal            float64 // 实际场次
 	Total                  float64 // 参与计算场次
-	Win                    float64 // 胜场
-	WinRate                float64 // 胜率 0.xxxx
+	Win                    float64 // 参与计算场次的胜场
+	WinRate                float64 // 参与计算场次的胜率 0.xxxx
 	AvgHit                 float64
 	AvgKill                float64
 	AvgDeath               float64
