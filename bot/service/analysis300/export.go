@@ -250,6 +250,7 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
 	msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", heroData.WinRate*100, heroData.Rank.WinRate)
+	msg += fmt.Sprintf("玩家均分：%d (%.1f%%)\n", int64(heroData.AvgJJL), heroData.Rank.AvgJJL)
 	msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", heroData.AvgUsedTime/60, heroData.Rank.AvgUsedTime)
 	msg += fmt.Sprintf("场均补刀：%.1f (%.1f%%)\n", heroData.AvgHit, heroData.Rank.AvgHit)
 	msg += fmt.Sprintf("场均每分补刀：%.2f (%.1f%%)\n", heroData.AvgHitPerMinite, heroData.Rank.AvgHitPerMinite)

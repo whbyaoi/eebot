@@ -161,11 +161,11 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "jjl 玩家 - 竞技力与开黑分析\n"
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
-		suffix += "g 英雄名称 - 全局英雄分析\n"
+		suffix += "g 英雄名称 - 全局英雄分析(各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
 	default:
-		suffix = "未知指令：" + svc + "\n 查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help"
+		suffix = "未知指令：" + svc + "\n查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help"
 	}
 
 	if err == nil {

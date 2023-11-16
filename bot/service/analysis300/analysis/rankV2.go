@@ -12,7 +12,7 @@ var attrs = []string{
 	"AvgAssist", "AvgTower", "AvgPutEye", "AvgDestryEye", "AvgMoney", "AvgMoney",
 	"AvgMakeDamage", "AvgTakeDamage", "AvgHitPerMinite", "AvgKillPerMinite", "AvgDeathPerMinite",
 	"AvgAssistPerMinite", "AvgTowerPerMinite", "AvgPutEyePerMinite", "AvgDestryEyePerMinite", "AvgMoneyPerMinite",
-	"AvgMakeDamagePerMinite", "AvgTakeDamagePerMinite", "AvgMoneyConversionRate", "AvgUsedTime", "Score",
+	"AvgMakeDamagePerMinite", "AvgTakeDamagePerMinite", "AvgMoneyConversionRate", "AvgUsedTime", "AvgJJL", "Score",
 }
 
 var weightTran = map[string]int{
@@ -59,6 +59,7 @@ type HeroData struct {
 	AvgTakeDamagePerMinite float64
 	AvgMoneyConversionRate float64
 	AvgUsedTime            float64
+	AvgJJL                 float64
 	Score                  float64
 
 	Rank Rank
@@ -118,6 +119,8 @@ func (hd *HeroData) get(attr string) float64 {
 		return hd.AvgMoneyConversionRate
 	case "AvgUsedTime":
 		return hd.AvgUsedTime
+	case "AvgJJL":
+		return hd.AvgJJL
 	case "Score":
 		return hd.Score
 	default:
@@ -179,6 +182,8 @@ func (hd *HeroData) set(attr string, value float64) {
 		hd.AvgMoneyConversionRate = value
 	case "AvgUsedTime":
 		hd.AvgUsedTime = value
+	case "AvgJJL":
+		hd.AvgJJL = value
 	case "Score":
 		hd.Score = value
 	}
@@ -211,6 +216,7 @@ type Rank struct {
 	AvgTakeDamagePerMinite float64
 	AvgMoneyConversionRate float64
 	AvgUsedTime            float64
+	AvgJJL                 float64
 	Score                  float64
 
 	PlayerCount float64
@@ -270,6 +276,8 @@ func (hd *Rank) set(attr string, value float64) {
 		hd.AvgMoneyConversionRate = value
 	case "AvgUsedTime":
 		hd.AvgUsedTime = value
+	case "AvgJJL":
+		hd.AvgJJL = value
 	case "Score":
 		hd.Score = value
 	}
@@ -338,6 +346,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			heroData.AvgMakeDamagePerMinite += play.MakeDamagePercent * float64(play.MakeDamageSide) / minute
 			heroData.AvgTakeDamagePerMinite += float64(play.TakeDamageSide) * play.TakeDamagePercent / minute
 			heroData.AvgMoneyConversionRate += float64(play.MakeDamageSide) * play.MakeDamagePercent / float64(play.TotalMoney) * 100
+			heroData.AvgJJL += float64(play.FV)
 			heroData.AvgUsedTime += float64(play.UsedTime)
 		}
 		if heroData.Total >= 5 {
@@ -368,6 +377,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 		heroData.AvgTakeDamagePerMinite /= heroData.Total
 		heroData.AvgMoneyConversionRate /= heroData.Total
 		heroData.AvgUsedTime /= heroData.Total
+		heroData.AvgJJL /= heroData.Total
 	}
 	return
 }
