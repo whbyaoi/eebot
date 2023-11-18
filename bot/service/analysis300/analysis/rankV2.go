@@ -349,7 +349,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			heroData.AvgJJL += float64(play.FV)
 			heroData.AvgUsedTime += float64(play.UsedTime)
 		}
-		if heroData.Total >= 5 {
+		if heroData.Total >= 5 { 
 			heroDataSlice = append(heroDataSlice, heroData)
 		}
 	}

@@ -3,6 +3,7 @@ package controller
 import (
 	"eebot/bot/service"
 	"eebot/bot/service/analysis300"
+	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/g"
 	"errors"
@@ -13,7 +14,7 @@ import (
 	"sync"
 )
 
-var NoWait = []string{"help", "菜单", "g", "top", "active", "flush"}
+var NoWait = []string{"help", "菜单", "g", "top", "active", "flush", "", "test"}
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
@@ -102,6 +103,8 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix, err = analysis300.ExportLikeAnalysis(name)
 	case "jjl": // 竞技力
 		suffix, err = analysis300.ExportJJLWithTeamAnalysis(name)
+	case "jjl2":
+		suffix, err = analysis300.ExportJJLCompositionAnalysis(name)
 	case "pk":
 		assgin := ""
 		if len(rawMessageSlice) > 3 {
@@ -136,6 +139,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	case "all": // 全部
 		if !HasAuth(sourceID) {
 			err = errors.New("无权使用该指令")
+			break
 		}
 		tmp, err := analysis300.ExportTeamAnalysisAdvanced(name)
 		if err != nil {
@@ -159,11 +163,19 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "s 玩家 --- 洗牌分析\n"
 		suffix += "l 玩家 --- 常用分析\n"
 		suffix += "jjl 玩家 - 竞技力与开黑分析\n"
+		suffix += "jjl2 玩家 - 竞技力成分分析\n"
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析(各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
+	case "test":
+		if !HasAuth(sourceID) {
+			err = errors.New("未知指令：" + svc + "\n查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help")
+			break
+		}
+		id, _ := collect.SearchRoleID("晚约")
+		analysis.StableJJLLAnalysis(id)
 	default:
 		suffix = "未知指令：" + svc + "\n查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help"
 	}

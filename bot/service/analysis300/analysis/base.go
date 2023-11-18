@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"time"
 )
@@ -281,7 +282,6 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 			} else {
 				enermyInfo[localPlayers[j].PlayerID]++
 			}
-
 		}
 	}
 
@@ -388,6 +388,196 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 	return
 }
 
+// JJLCompositionAnalysis jjl成分分析
+//
+//	team:
+//		team[*][0] - (*+1)黑上分
+//		team[*][1] - (*+1)黑掉分
+//		team[*][2] - (*+1)黑场次
+func JJLCompositionAnalysis(PlayerID uint64) (team [4][3]float64, scope [6][3]float64, hero map[int][3]float64, total int) {
+	matches, myPlays, marks := MarkTeam(PlayerID)
+	total = len(matches)
+	hero = map[int][3]float64{}
+	for i := range matches {
+		if i == 0 {
+			continue
+		}
+		offset := float64(myPlays[i].FV - myPlays[i-1].FV)
+		tr := func(fv float64) int {
+			if fv >= 0 {
+				return 0
+			} else {
+				return 1
+			}
+		}
+		// 开黑情况
+		team[marks[i]][tr(offset)] += offset
+		team[marks[i]][2]++
+		// 范围情况
+		for _, player := range matches[i].Players {
+			if player.Side == myPlays[i].Side {
+				continue
+			}
+			fv := player.FV
+			if fv < 1500 {
+				scope[0][2]++
+				scope[0][tr(offset)] += offset / 7
+			} else if 1500 <= fv && fv < 1700 {
+				scope[1][2]++
+				scope[1][tr(offset)] += offset / 7
+			} else if 1700 <= fv && fv < 1800 {
+				scope[2][2]++
+				scope[2][tr(offset)] += offset / 7
+			} else if 1800 <= fv && fv < 1900 {
+				scope[3][2]++
+				scope[3][tr(offset)] += offset / 7
+			} else if 1900 <= fv && fv < 2000 {
+				scope[4][2]++
+				scope[4][tr(offset)] += offset / 7
+			} else if 2000 <= fv {
+				scope[5][2]++
+				scope[5][tr(offset)] += offset / 7
+			}
+		}
+		// 英雄情况
+		if v, ok := hero[myPlays[i].HeroID]; ok {
+			v[2]++
+			v[tr(offset)] += offset
+			hero[myPlays[i].HeroID] = v
+		} else {
+			tmp := [3]float64{0, 0, 1}
+			tmp[tr(offset)] += offset
+			hero[myPlays[i].HeroID] = tmp
+		}
+	}
+	return
+}
+
+// 安定段位分析
+func StableJJLLAnalysis(PlayerID uint64) (stable int) {
+	matches, myPlays, _ := MarkTeam(PlayerID)
+	if len(matches) == 0 {
+		return 0
+	}
+	// fv-offset 分数得分情况
+	m := map[int]int{}
+	for i := range matches {
+		if i == 0 {
+			continue
+		}
+		offset := myPlays[i].FV - myPlays[i-1].FV
+		for _, localPlayer := range matches[i].Players {
+			if localPlayer.Side != myPlays[i].Side {
+				m[localPlayer.FV] += offset
+			}
+		}
+	}
+	sortedOffset := [][2]int{}
+	for fv, offset := range m {
+		sortedOffset = append(sortedOffset, [2]int{fv, offset})
+	}
+	slices.SortFunc[[][2]int](sortedOffset, func(a, b [2]int) int { return a[0] - b[0] })
+	// 初始化区间
+	stables := []int{}
+	for span := 30; span <= 100; span += 10 {
+		cluster := make([][2]int, 2500/span)
+		// 双指针
+		q := 0
+		for p := 0; p < len(cluster); p++ {
+			scope := [2]int{(p+1)*span - span/2, (p+1)*span + span/2}
+			for q < len(sortedOffset) {
+				if scope[0] <= sortedOffset[q][0] && sortedOffset[q][0] < scope[1] {
+					cluster[p][0] += sortedOffset[q][1]
+					cluster[p][1] += 1
+					q++
+					continue
+				} else {
+					break
+				}
+			}
+		}
+		for i := 0; i < len(cluster)-1; i++ {
+			if cluster[i][1] != 0 && (i+1)*span-span/2 > 1500 {
+				if cluster[i][0] >= 0 && cluster[i+1][0] <= 0 {
+					stables = append(stables, (i+1)*span+span/2)
+					break
+				}
+			}
+		}
+	}
+	slices.Sort[[]int](stables)
+	sum := 0
+	for _, v := range stables[1 : len(stables)-1] {
+		sum += v
+	}
+	sum /= len(stables[1 : len(stables)-1])
+	return sum
+}
+
+// 标记开黑情况
+//
+//	matches: 按照时间戳排序的比赛记录
+//	marks: 比赛对应的开黑，0单排，3四黑
+func MarkTeam(PlayerID uint64) (matches []db.Match, myPlays []db.Player, marks []int) {
+	matchIDs, _ := getMatchIdsAndSides(PlayerID)
+	err := db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs).Order("create_time asc").Find(&matches).Error
+	if err != nil || len(matches) == 0 {
+		return
+	}
+	allyInfo := map[uint64]int{}
+	enermyInfo := map[uint64]int{}
+	for _, match := range matches {
+		// 先找到自己
+		var me db.Player
+		for _, player := range match.Players {
+			if player.PlayerID == PlayerID {
+				me = player
+				break
+			}
+		}
+		myPlays = append(myPlays, me)
+		// 初始化开黑情况
+		for _, player := range match.Players {
+			if player.PlayerID == PlayerID {
+				continue
+			}
+			if player.Side == me.Side {
+				allyInfo[player.PlayerID]++
+			} else {
+				enermyInfo[player.PlayerID]++
+			}
+		}
+	}
+	sortedAllies := [][2]uint64{}
+	for k, v := range allyInfo {
+		sortedAllies = append(sortedAllies, [2]uint64{k, uint64(v)})
+	}
+	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][1] > sortedAllies[j][1] })
+	top10Allies := sortedAllies[:10]
+	isGangUp := func(arr [][2]uint64, id uint64) bool {
+		for i := range arr {
+			// 包含在频次top10中
+			// 并且频次超过3把
+			cnt := arr[i][1] - uint64(enermyInfo[id])
+			if arr[i][0] == id && cnt > 3 {
+				return true
+			}
+		}
+		return false
+	}
+	for i, _ := range matches {
+		cnt := 0
+		for _, player := range matches[i].Players {
+			if player.Side == myPlays[i].Side && isGangUp(top10Allies, player.PlayerID) {
+				cnt++
+			}
+		}
+		cnt = min(cnt, 3)
+		marks = append(marks, cnt)
+	}
+	return
+}
+
 // FormatJson 格式化Json以便更容器查看, 如果m格式错误则返回空字符串
 func FormatJson(m interface{}, indent bool) string {
 	var b []byte
@@ -410,7 +600,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	if !ok {
 		return selfData, otherData, errors.New("玩家无此数据")
 	}
-	selfData[0] = math.Ceil(me.WinRate * 100 * 100) / 100.0
+	selfData[0] = math.Ceil(me.WinRate*100*100) / 100.0
 	selfData[1] = math.Round(me.AvgUsedTime/60*100) / 100
 	selfData[2] = math.Round(me.AvgHitPerMinite*100) / 100
 	selfData[3] = math.Round(me.AvgKillPerMinite*100) / 100
@@ -428,7 +618,7 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	// 获取top1数据
 	top, _ := GetRankFromTop(HeroID, 0, 1)
 	top1 := top[0]
-	otherData[0] = math.Ceil(top1.WinRate * 100 * 100) / 100.0
+	otherData[0] = math.Ceil(top1.WinRate*100*100) / 100.0
 	otherData[1] = math.Round(top1.AvgUsedTime/60*100) / 100
 	otherData[2] = math.Round(top1.AvgHitPerMinite*100) / 100
 	otherData[3] = math.Round(top1.AvgKillPerMinite*100) / 100
