@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+var ValidTimes = 5.0
+
+var ValidIntervalTimes = 100
+
+var MaxPlayTimes = 50.0
+
 var attrs = []string{
 	"ActualTotal", "Total", "Win", "WinRate", "AvgHit", "AvgKill", "AvgDeath",
 	"AvgAssist", "AvgTower", "AvgPutEye", "AvgDestryEye", "AvgMoney", "AvgMoney",
@@ -125,67 +131,6 @@ func (hd *HeroData) get(attr string) float64 {
 		return hd.Score
 	default:
 		return 0
-	}
-}
-
-func (hd *HeroData) set(attr string, value float64) {
-	switch attr {
-	case "ActualTotal":
-		hd.ActualTotal = value
-	case "Total":
-		hd.Total = value
-	case "Win":
-		hd.Win = value
-	case "WinRate":
-		hd.WinRate = value
-	case "AvgHit":
-		hd.AvgHit = value
-	case "AvgKill":
-		hd.AvgKill = value
-	case "AvgDeath":
-		hd.AvgDeath = value
-	case "AvgAssist":
-		hd.AvgAssist = value
-	case "AvgTower":
-		hd.AvgTower = value
-	case "AvgPutEye":
-		hd.AvgPutEye = value
-	case "AvgDestryEye":
-		hd.AvgDestryEye = value
-	case "AvgMoney":
-		hd.AvgMoney = value
-	case "AvgMakeDamage":
-		hd.AvgMakeDamage = value
-	case "AvgTakeDamage":
-		hd.AvgTakeDamage = value
-	case "AvgHitPerMinite":
-		hd.AvgHitPerMinite = value
-	case "AvgKillPerMinite":
-		hd.AvgKillPerMinite = value
-	case "AvgDeathPerMinite":
-		hd.AvgDeathPerMinite = value
-	case "AvgAssistPerMinite":
-		hd.AvgAssistPerMinite = value
-	case "AvgTowerPerMinite":
-		hd.AvgTowerPerMinite = value
-	case "AvgPutEyePerMinite":
-		hd.AvgPutEyePerMinite = value
-	case "AvgDestryEyePerMinite":
-		hd.AvgDestryEyePerMinite = value
-	case "AvgMoneyPerMinite":
-		hd.AvgMoneyPerMinite = value
-	case "AvgMakeDamagePerMinite":
-		hd.AvgMakeDamagePerMinite = value
-	case "AvgTakeDamagePerMinite":
-		hd.AvgTakeDamagePerMinite = value
-	case "AvgMoneyConversionRate":
-		hd.AvgMoneyConversionRate = value
-	case "AvgUsedTime":
-		hd.AvgUsedTime = value
-	case "AvgJJL":
-		hd.AvgJJL = value
-	case "Score":
-		hd.Score = value
 	}
 }
 
@@ -349,7 +294,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			heroData.AvgJJL += float64(play.FV)
 			heroData.AvgUsedTime += float64(play.UsedTime)
 		}
-		if heroData.Total >= 5 { 
+		if heroData.Total >= ValidTimes {
 			heroDataSlice = append(heroDataSlice, heroData)
 		}
 	}

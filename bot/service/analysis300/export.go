@@ -18,39 +18,60 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-func ExportTeamAnalysisAdvanced(name string) (msg string, err error) {
+func ExportTeamAnalysis(name string) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
 	if err != nil {
 		return
 	}
-	allies, _, teams, teamAllies, total := analysis.TeamAnalysisAdvanced(PlayerID)
-	msg += fmt.Sprintf("昵称：%s，记录场次：%d\n", name, total)
+	matches, myPlays, marks, marksDetail, allies := analysis.MarkTeam(PlayerID, 0)
+	gangUp, alliesDetail, _, _, _, _ := analysis.JJLCompositionAnalysis(PlayerID, 0)
+	msg += fmt.Sprintf("昵称：%s，记录场次：%d\n", name, len(matches))
 	msg += fmt.Sprintln("队友情况：")
 	for i := range allies {
-		if i >= 10 {
+		if i >= 7 {
 			break
 		}
-		msg += fmt.Sprintf("%d、%s，作为队友场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(allies[i][0]), allies[i][2], analysis.Divide(allies[i][2], uint64(total))*100, analysis.Divide(allies[i][1], allies[i][2])*100)
-	}
-	// msg += fmt.Sprintln("对手情况：")
-	// for i := range enermies {
-	// 	if i >= 5 {
-	// 		break
-	// 	}
-	// 	msg += fmt.Sprintf("%d、%s，作为对手场次：%d (%.1f%%)，胜率：%.1f%%\n", i+1, "昵称："+collect.SearchName(enermies[i][0]), enermies[i][2], analysis.Divide(enermies[i][2], uint64(total))*100, analysis.Divide(enermies[i][1], enermies[i][2])*100)
-	// }
-
-	var arr [4][]string
-	for k, v := range teamAllies {
-		for name := range v {
-			arr[k] = append(arr[k], name)
+		if allies[i][2] > 0 {
+			msg += fmt.Sprintf("%d、%s，%d局(%.1f%%)，胜率：%.1f%%，净上分：%d\n",
+				i+1,
+				collect.SearchName(allies[i][0]),
+				allies[i][1],
+				analysis.Divide(allies[i][2], uint64(len(myPlays)))*100,
+				analysis.Divide(allies[i][2], allies[i][1])*100,
+				int64(alliesDetail[allies[i][0]][0]+alliesDetail[allies[i][0]][1]),
+			)
 		}
 	}
-	msg += fmt.Sprintln("开黑情况(仅供参考)：")
-	msg += fmt.Sprintf("单排 %d(%.1f%%) 局，胜率 %.1f%%\n", teams[0][1], analysis.Divide(teams[0][1], uint64(total))*100, analysis.Divide(teams[0][0], teams[0][1])*100)
-	msg += fmt.Sprintf("双排 %d(%.1f%%) 局，胜率 %.1f%%，黑车队友：%s\n", teams[1][1], analysis.Divide(teams[1][1], uint64(total))*100, analysis.Divide(teams[1][0], teams[1][1])*100, strings.Join(arr[1], "，"))
-	msg += fmt.Sprintf("三黑 %d(%.1f%%) 局，胜率 %.1f%%，黑车队友：%s\n", teams[2][1], analysis.Divide(teams[2][1], uint64(total))*100, analysis.Divide(teams[2][0], teams[2][1])*100, strings.Join(arr[2], "，"))
-	msg += fmt.Sprintf("四黑 %d(%.1f%%) 局，胜率 %.1f%%，黑车队友：%s\n", teams[3][1], analysis.Divide(teams[3][1], uint64(total))*100, analysis.Divide(teams[3][0], teams[3][1])*100, strings.Join(arr[3], "，"))
+	m := [4]map[string]struct{}{{}, {}, {}, {}}
+	gangUpDetail := [4][2]int{}
+	gangUpAllies := [4][]string{}
+	for i := range myPlays {
+		for j := range marksDetail[i] {
+			m[marks[i]][marksDetail[i][j]] = struct{}{}
+		}
+		gangUpDetail[marks[i]][0]++
+		if myPlays[i].Result == 1 || myPlays[i].Result == 3 {
+			gangUpDetail[marks[i]][1]++
+		}
+	}
+	for i := range m {
+		for name := range m[i] {
+			gangUpAllies[i] = append(gangUpAllies[i], name)
+		}
+	}
+	msg += fmt.Sprintln("开黑情况：")
+	for i := range gangUpDetail {
+		if gangUpDetail[i][0] > 0 {
+			msg += fmt.Sprintf("%s%d局(%.1f%%)，胜率%.1f%%，净上分：%d，队友：%s\n",
+				analysis.GangUpCategoryKeys[i],
+				gangUpDetail[i][0],
+				analysis.Divide[int](gangUpDetail[i][0], len(myPlays))*100,
+				analysis.Divide[int](gangUpDetail[i][1], gangUpDetail[i][0])*100,
+				int64(gangUp[i][0]+gangUp[i][1]),
+				strings.Join(gangUpAllies[i], "，"),
+			)
+		}
+	}
 	return
 }
 
@@ -60,7 +81,8 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		return
 	}
 
-	rs, diff, svd, _, _, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	rs, diff, svd, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	_, _, _, scope, _, _ := analysis.JJLCompositionAnalysis(PlayerID, 0)
 	if len(rs) == 0 {
 		return "", errors.New("查询不到任何战绩")
 	}
@@ -71,8 +93,8 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	diff2 := 0
 	fvRange := [2]int{2500, 0}
 	for i := range rs {
-		fvRange[0] = min(rs[i][3], fvRange[0])
-		fvRange[1] = max(rs[i][3], fvRange[1])
+		fvRange[0] = min(int(rs[i][3]), fvRange[0])
+		fvRange[1] = max(int(rs[i][3]), fvRange[1])
 		if rs[i][2] == 1 {
 			win++
 			if rs[i][0] > rs[i][1] {
@@ -84,17 +106,9 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 				cnt2++
 			}
 		}
-		diff2 += rs[i][0] - rs[i][1]
+		diff2 += int(rs[i][0] - rs[i][1])
 	}
 	diff2 /= len(rs)
-
-	tran := func(stage [2]int) string {
-		return fmt.Sprintf("%.1f%% / %d", float32(stage[0])/float32(stage[0]+stage[1])*100, stage[0]+stage[1])
-	}
-
-	tran2 := func(stage [2]int) string {
-		return fmt.Sprintf("%.1f%%", float32(stage[0]+stage[1])/float32(len(rs))*100)
-	}
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d，团分跨度：%d - %d，时间跨度：%s - %s\n", name, len(rs), fvRange[0], fvRange[1], time.Unix(int64(timeRange[0]), 0).Format("20060102"), time.Unix(int64(timeRange[1]), 0).Format("20060102"))
 	msg += fmt.Sprintf("当前团分：%d，安定团分：%d，胜率：%.1f%%\n", fvNow, analysis.StableJJLLAnalysis(PlayerID), float32(win)/float32(win+lose)*100)
 	msg += fmt.Sprintf("玩家分相对场均分水平：%d\n", diff)
@@ -103,22 +117,30 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		cnt1+lose-cnt2,
 		float32(cnt1+lose-cnt2)/float32(len(rs))*100)
 	msg += fmt.Sprintf("己方均分相对敌方均分水平：%d\n", diff2)
-	// msg += fmt.Sprintf("己方均分相对敌方均分水平(除外自身与对位)：%d\n", fixDiff)
 	msg += fmt.Sprintf("己方团分离散度相对敌方团分离散度水平：%d\n", svd)
 
-	stage1 := analysis.ExtractByFVAdvanced(1000, 1500, rs)
-	stage2 := analysis.ExtractByFVAdvanced(1500, 1700, rs)
-	stage3 := analysis.ExtractByFVAdvanced(1700, 1800, rs)
-	stage4 := analysis.ExtractByFVAdvanced(1800, 1900, rs)
-	stage5 := analysis.ExtractByFVAdvanced(1900, 2000, rs)
-	stage6 := analysis.ExtractByFVAdvanced(2000, 2500, rs)
-
-	msg += fmt.Sprintf("分段%s(%s)：%s (占比 / 胜率 / 场次，下同)\n", "1000-1500", tran2(stage1), tran(stage1))
-	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1500-1700", tran2(stage2), tran(stage2))
-	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1700-1800", tran2(stage3), tran(stage3))
-	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1800-1900", tran2(stage4), tran(stage4))
-	msg += fmt.Sprintf("分段%s(%s)：%s\n", "1900-2000", tran2(stage5), tran(stage5))
-	msg += fmt.Sprintf("分段%s(%s)：%s\n", "2000-2500", tran2(stage6), tran(stage6))
+	stages := make([][2]int, len(analysis.DefaultJJLCategoryKeys))
+	for i := range rs {
+		stages[analysis.DefaultJJLCategoryKeys.Index(rs[i][5])][0]++
+		if rs[i][2] == 1 {
+			stages[analysis.DefaultJJLCategoryKeys.Index(rs[i][5])][1]++
+		}
+	}
+	suffix := "(占比 / 胜率 / 场次 / 净上分，下同)"
+	for i := range stages {
+		if stages[i][0] > 0 {
+			msg += fmt.Sprintf("%d-%d(%.1f%%)：%.1f%% / %d / %d%s\n",
+				int(analysis.DefaultJJLCategoryKeys.GetRange(i)[0]),
+				int(analysis.DefaultJJLCategoryKeys.GetRange(i)[1]),
+				analysis.Divide[int](stages[i][0], len(rs))*100,
+				analysis.Divide[int](stages[i][1], stages[i][0])*100,
+				stages[i][0],
+				int64(scope[i][0]+scope[i][1]),
+				suffix,
+			)
+			suffix = ""
+		}
+	}
 
 	var a1, a2, a3 uint64 = 0, 0, 0
 	var w1, w2, w3 uint64 = 0, 0, 0
@@ -170,62 +192,17 @@ func ExportShuffleAnalysisAdvanced(name string) (msg string, err error) {
 	msg += fmt.Sprintf("洗牌分析，昵称：%s\n", name)
 	msg += fmt.Sprintf("本人有效间隔数：%d，平均间隔：%d秒，超过十分钟的间隔数：%d (占比%.1f%%)\n", total, avg, than10min, analysis.Divide(uint64(than10min), uint64(total))*100)
 
-	allies, _, sum := analysis.TeamAnalysis(playerID)
+	matches, _, _, _, allies := analysis.MarkTeam(playerID, 0)
 	for i, ally := range allies {
 		if i >= 7 {
 			break
 		}
-		if analysis.Divide(ally[1], uint64(sum))*100 < 2.0 || ally[1] <= 2 {
+		if analysis.Divide(ally[1], uint64(len(matches)))*100 < 2.0 || ally[1] <= 2 {
 			continue
 		}
 		collect.CrawlPlayerByID(ally[0])
 		avg, than10min, total := analysis.ShuffleAnalysis(ally[0])
 		msg += fmt.Sprintf("开黑队友 %s 有效间隔数：%d，平均间隔：%d秒，超过十分钟的间隔数：%d (%.1f%%)\n", collect.SearchName(ally[0]), total, avg, than10min, analysis.Divide(uint64(than10min), uint64(total))*100)
-	}
-	return
-}
-
-// ExportAssignHeroAnalysisAdvanced 分析fv团分上的玩家的英雄数据
-func ExportAssignHeroAnalysisAdvanced(name string, hero string, fv int) (msg string, err error) {
-	PlayerID, err := collect.SearchRoleID(name)
-	if err != nil {
-		return
-	}
-	if _, ok := db.HeroNameToID[hero]; !ok {
-		return "未知英雄 " + name, nil
-	}
-	analysis.UpdateHeroOfPlayerRank(db.HeroNameToID[hero], fv)
-	rs, total := analysis.HeroAnalysis(PlayerID, fv)
-	_, rank, overallScore, total2 := analysis.GetHeroOfPlayerRank(db.HeroNameToID[hero], PlayerID, fv)
-	msg += fmt.Sprintf("昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
-	for i := range rs {
-		if db.HeroIDToName[int(rs[i][0])] != hero {
-			continue
-		}
-		msg += fmt.Sprintf("英雄：%s\n", hero)
-		msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total2, int(analysis.ValidTimes), fv)
-		msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(rs[i][28]), uint64(rs[i][1]))
-		msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", rs[i][2]/rs[i][1]*100, rank[2])
-		msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", rs[i][27]/60, rank[27])
-		msg += fmt.Sprintf("场均补刀：%.1f (%.1f%%)\n", rs[i][3], rank[3])
-		msg += fmt.Sprintf("场均每分补刀：%.2f (%.1f%%)\n", rs[i][4], rank[4])
-		msg += fmt.Sprintf("场均kda：%.1f (%.1f%%) / %.1f (%.1f%%) / %.1f (%.1f%%)\n", rs[i][5], rank[5], rs[i][7], rank[7], rs[i][9], rank[9])
-		msg += fmt.Sprintf("场均每分kda：%.2f (%.1f%%) / %.2f (%.1f%%) / %.2f (%.1f%%)\n", rs[i][6], rank[6], rs[i][8], rank[8], rs[i][10], rank[10])
-		msg += fmt.Sprintf("场均推塔：%.1f (%.1f%%)\n", rs[i][11], rank[11])
-		msg += fmt.Sprintf("场均每分推塔：%.2f (%.1f%%)\n", rs[i][12], rank[12])
-		msg += fmt.Sprintf("场均插/排眼：%.2f (%.1f%%) / %.2f (%.1f%%)\n", rs[i][13], rank[13], rs[i][15], rank[15])
-		msg += fmt.Sprintf("场均每分插/排眼：%.3f (%.1f%%) / %.3f (%.1f%%)\n", rs[i][14], rank[14], rs[i][16], rank[16])
-		msg += fmt.Sprintf("场均经济：%.1f (%.1f%%)\n", rs[i][17], rank[17])
-		msg += fmt.Sprintf("场均每分经济：%.1f (%.1f%%)\n", rs[i][18], rank[18])
-		msg += fmt.Sprintf("场均经济占比：%.1f%% (%.1f%%)\n", rs[i][19]*100, rank[19])
-		msg += fmt.Sprintf("场均输出：%.1f (%.1f%%)\n", rs[i][20], rank[20])
-		msg += fmt.Sprintf("场均每分输出：%.1f (%.1f%%)\n", rs[i][21], rank[21])
-		msg += fmt.Sprintf("场均输出占比：%.1f%% (%.1f%%)\n", rs[i][22]*100, rank[22])
-		msg += fmt.Sprintf("场均承伤：%.1f (%.1f%%)\n", rs[i][23], rank[23])
-		msg += fmt.Sprintf("场均每分承伤：%.1f (%.1f%%)\n", rs[i][24], rank[24])
-		msg += fmt.Sprintf("场均承伤占比：%.1f%% (%.1f%%)\n", rs[i][25]*100, rank[25])
-		msg += fmt.Sprintf("场均经济转换率：%.1f%% (%.1f%%)\n", rs[i][26], rank[26])
-		msg += fmt.Sprintf("综合评分：%d (%.1f%%)\n", overallScore, rank[28])
 	}
 	return
 }
@@ -244,10 +221,13 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 		return fmt.Sprintf("%s 最近30天无 %s 战绩", name, hero), nil
 	}
 	heroData := heroDataSlice[PlayerID]
+	_, _, _, _, jjl, _ := analysis.JJLCompositionAnalysis(PlayerID, 24*30*time.Hour)
 	msg += fmt.Sprintf("昵称：%s(只会计算近30天战绩)\n", name)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
 	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
+	msg += fmt.Sprintf("净上分：%d，上分：%d，掉分：%d\n", int(jjl[db.HeroNameToID[hero]][0]+jjl[db.HeroNameToID[hero]][1]),
+		int(jjl[db.HeroNameToID[hero]][0]), int(jjl[db.HeroNameToID[hero]][1]))
 	msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", heroData.WinRate*100, heroData.Rank.WinRate)
 	msg += fmt.Sprintf("玩家均分：%d (%.1f%%)\n", int64(heroData.AvgJJL), heroData.Rank.AvgJJL)
 	msg += fmt.Sprintf("场均耗时：%.1f (%.1f%%) \n", heroData.AvgUsedTime/60, heroData.Rank.AvgUsedTime)
@@ -284,6 +264,7 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		return
 	}
 	rs, total := analysis.HeroAnalysis(PlayerID, 0)
+	_, _, _, _, heroDetail, _ := analysis.JJLCompositionAnalysis(PlayerID, 30*24*time.Hour)
 	msg += fmt.Sprintf("英雄分析，昵称：%s，总场次：%d(只会计算近30天战绩)\n", name, total)
 	for i := range rs {
 		if i >= 5 {
@@ -302,11 +283,12 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 				win++
 			}
 		}
-		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，评分：%.1f(%.1f%%)\n",
+		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，净上分：%d，评分：%.1f(%.1f%%)\n",
 			i+1,
 			db.HeroIDToName[int(rs[i][0])],
 			len(players),
 			float64(win)/float64(len(players))*100,
+			int(heroDetail[int(rs[i][0])][1]+heroDetail[int(rs[i][0])][0]),
 			heroData[PlayerID].Score,
 			heroData[PlayerID].Rank.Score,
 		)
@@ -505,7 +487,7 @@ func ExportJJLCompositionAnalysis(name string) (msg string, err error) {
 	if err != nil {
 		return
 	}
-	team, scope, hero, total := analysis.JJLCompositionAnalysis(PlayerID)
+	team, _, scope, _, hero, total := analysis.JJLCompositionAnalysis(PlayerID, 0)
 	heroArr := [][4]float64{}
 	for heroID, data := range hero {
 		heroArr = append(heroArr, [4]float64{data[0], data[1], data[2], float64(heroID)})
@@ -513,17 +495,19 @@ func ExportJJLCompositionAnalysis(name string) (msg string, err error) {
 	sort.Slice(heroArr, func(i int, j int) bool { return heroArr[i][2] > heroArr[j][2] })
 	msg += fmt.Sprintf("玩家昵称：%s，总场次：%d\n", name, total)
 	msg += "jjl来自开黑情况：\n"
-	msg += fmt.Sprintf("单排%d场，占比%.1f%%，净上分：%d\n", int(team[0][2]), float64(team[0][2])/float64(total)*100,  int(team[0][0])+int(team[0][1]))
-	msg += fmt.Sprintf("双排%d场，占比%.1f%%，净上分：%d\n", int(team[1][2]), float64(team[1][2])/float64(total)*100,  int(team[1][0])+int(team[1][1]))
-	msg += fmt.Sprintf("三排%d场，占比%.1f%%，净上分：%d\n", int(team[2][2]), float64(team[2][2])/float64(total)*100,  int(team[2][0])+int(team[2][1]))
-	msg += fmt.Sprintf("四黑%d场，占比%.1f%%，净上分：%d\n", int(team[3][2]), float64(team[3][2])/float64(total)*100, int(team[3][0])+int(team[3][1]))
+	ranges := []string{"单排", "双排", "三黑", "四黑"}
+	for i := range ranges {
+		if team[i][2] > 0 {
+			msg += fmt.Sprintf("%s%d场，占比%.1f%%，净上分：%d\n", ranges[i], int(team[i][2]), float64(team[i][2])/float64(total)*100, int(team[i][0])+int(team[i][1]))
+		}
+	}
+	ranges = []string{"1000-1500", "1500-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2500"}
 	msg += "jjl来自对手玩家的分段情况：\n"
-	msg += fmt.Sprintf("分段1000-1500，%d人，净上分：%d\n", int(scope[0][2]), int(scope[0][0])+int(scope[0][1]))
-	msg += fmt.Sprintf("分段1500-1700，%d人，净上分：%d\n", int(scope[1][2]), int(scope[1][0])+int(scope[1][1]))
-	msg += fmt.Sprintf("分段1700-1800，%d人，净上分：%d\n", int(scope[2][2]),  int(scope[2][0])+int(scope[2][1]))
-	msg += fmt.Sprintf("分段1800-1900，%d人，净上分：%d\n", int(scope[3][2]), int(scope[3][0])+int(scope[3][1]))
-	msg += fmt.Sprintf("分段1900-2000，%d人，净上分：%d\n", int(scope[4][2]),int(scope[4][0])+int(scope[4][1]))
-	msg += fmt.Sprintf("分段2000-2500，%d人，净上分：%d\n", int(scope[5][2]), int(scope[5][0])+int(scope[5][1]))
+	for i := range ranges {
+		if scope[i][2] > 0 {
+			msg += fmt.Sprintf("分段%s，%d人，净上分：%d\n", ranges[i], int(scope[i][2]), int(scope[i][0])+int(scope[i][1]))
+		}
+	}
 	other := [3]int{}
 	if len(heroArr) > 5 {
 		for i := 5; i < len(heroArr); i++ {
@@ -539,7 +523,9 @@ func ExportJJLCompositionAnalysis(name string) (msg string, err error) {
 		}
 		msg += fmt.Sprintf("%d、%s，%d场，占比%.1f%%，净上分：%d\n", i+1, db.HeroIDToName[int(heroArr[i][3])], int(heroArr[i][2]), heroArr[i][2]/float64(total)*100, int(heroArr[i][0])+int(heroArr[i][1]))
 	}
-	msg += fmt.Sprintf("其他，%d场，占比%.1f%%，净上分：%d", int(other[2]), float64(other[2])/float64(total)*100, int(other[0])+int(other[1]))
+	if other[2] > 0 {
+		msg += fmt.Sprintf("其他，%d场，占比%.1f%%，净上分：%d", int(other[2]), float64(other[2])/float64(total)*100, int(other[0])+int(other[1]))
+	}
 	return
 }
 

@@ -15,78 +15,6 @@ var PlayerListKey = "300analysis:player_list"
 
 var ExpiryDate int64 = 30 * 24 * 60 * 60
 
-// WinOrLoseAnalysis 胜负分析
-//
-//	return: result [][3]int
-//			- result[*][0] -- 己方均分
-//			- result[*][1] -- 对方均分
-//			- result[*][2] -- 输赢，1=赢，2=输
-//
-//			diff    相对均分偏移
-//			diff2   相对均分离散
-//			fvRange 竞技力范围
-func WinOrLoseAnalysis(PlayerID uint64) (result [][3]int, diff int, diff2 int, fvRange [2]int, fvNow int) {
-	matchIds, sides := getMatchIdsAndSides(PlayerID)
-
-	fvRange[0] = 2500
-	fvRange[1] = 0
-	var maxTimestamps uint64
-	for i := range matchIds {
-		var selfFV int
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
-
-		// TODO 效率有点低
-		var match db.Match
-		db.SqlDB.Model(&db.Match{}).Where("match_id = ?", matchIds[i]).Find(&match)
-
-		var tmp [3]int
-		fvSum1 := 0 // 己方团分
-		fvSum2 := 0 // 对面团分
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				tmp[2] = localPlayers[j].Result
-				selfFV = localPlayers[j].FV
-				fvRange[0] = min(localPlayers[j].FV, fvRange[0])
-				fvRange[1] = max(localPlayers[j].FV, fvRange[1])
-				if match.CreateTime >= maxTimestamps {
-					maxTimestamps = match.CreateTime
-					fvNow = selfFV
-				}
-			}
-			if localPlayers[j].Side == sides[i] {
-				fvSum1 += localPlayers[j].FV
-			} else {
-				fvSum2 += localPlayers[j].FV
-			}
-		}
-		tmp[0] = fvSum1 / 7
-		tmp[1] = fvSum2 / 7
-
-		diff += selfFV - (tmp[0]+tmp[1])/2
-		result = append(result, tmp)
-
-		// 计算标准差
-		_svd1 := 0
-		_svd2 := 0
-		for j := range localPlayers {
-			if localPlayers[j].Side == sides[i] {
-				_svd1 += (localPlayers[j].FV - tmp[0]) * (localPlayers[j].FV - tmp[0])
-			} else {
-				_svd2 += (localPlayers[j].FV - tmp[1]) * (localPlayers[j].FV - tmp[1])
-			}
-		}
-		_svd1 = int(math.Sqrt(float64(_svd1) / 6))
-		_svd2 = int(math.Sqrt(float64(_svd2) / 6))
-		diff2 += _svd1 - _svd2
-	}
-	if len(matchIds) != 0 {
-		diff /= len(matchIds)
-		diff2 /= len(matchIds)
-	}
-	return
-}
-
 // HeroAnalysis 英雄分析(常用英雄及其数据)
 //
 //	return:
@@ -193,56 +121,15 @@ func HeroAnalysis(PlayerID uint64, fv int) (result [][29]float64, total uint64) 
 	return
 }
 
-// TeamAnalysis 开黑分析
-//
-//	sortedAllies[*][0]: 玩家id
-//	sortedAllies[*][1]: 出现次数
-func TeamAnalysis(PlayerID uint64) (sortedAllies [][2]uint64, sortedEnermies [][2]uint64, total int) {
-	matchIds, sides := getMatchIdsAndSides(PlayerID)
-
-	total = len(matchIds)
-	allyCount := map[uint64]int{}
-	enermyCount := map[uint64]int{}
-	for i := range matchIds {
-		// 找到这局的玩家
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
-
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				continue
-			}
-			if localPlayers[j].Side == sides[i] {
-				allyCount[localPlayers[j].PlayerID]++
-			} else {
-				enermyCount[localPlayers[j].PlayerID]++
-			}
-		}
+func GetMatchAndMyPlays(PlayerID uint64, span time.Duration) (matches []db.Match, myPlays []db.Player) {
+	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and create_time > ?", PlayerID, time.Now().Add(-span).Unix()).Order("create_time asc").Find(&myPlays)
+	matchIds := make([]string, 0, len(myPlays))
+	for i := range myPlays {
+		matchIds = append(matchIds, myPlays[i].MatchID)
 	}
-
-	// map to array
-	for k, v := range allyCount {
-		sortedAllies = append(sortedAllies, [2]uint64{k, uint64(v)})
-	}
-
-	for k, v := range enermyCount {
-		sortedEnermies = append(sortedEnermies, [2]uint64{k, uint64(v)})
-	}
-
-	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][1] > sortedAllies[j][1] })
-	sort.Slice(sortedEnermies, func(i int, j int) bool { return sortedEnermies[i][1] > sortedEnermies[j][1] })
-	return
-}
-
-func getMatchIdsAndSides(PlayerID uint64) (matchIds []string, sides []int) {
-	var players []db.Player
-	db.SqlDB.Model(&db.Player{}).Where("player_id = ?", PlayerID).Find(&players)
-	sides = make([]int, 0, len(players))
-
-	matchIds = make([]string, 0, len(players))
-	for i := range players {
-		matchIds = append(matchIds, players[i].MatchID)
-		sides = append(sides, players[i].Side)
+	err := db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIds).Order("create_time asc").Find(&matches).Error
+	if err != nil || len(matches) == 0 {
+		return
 	}
 	return
 }
@@ -257,95 +144,28 @@ func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 }
 
 func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, team [][4]uint64) {
-	timeToData := map[int64][6]uint64{} // 时间戳 - [单排次数, 双排次数, 三黑次数, 四黑次数, jjl, jjl对应时间戳]
-
-	// 先获得开黑情况
-	matchIds, sides := getMatchIdsAndSides(PlayerID)
-	if len(matchIds) == 0 {
-		return
-	}
-
-	allyInfo := map[uint64]int{} // id-cnt
-	enermyInfo := map[uint64]int{}
-	matchToPlayers := map[string][]db.Player{} // match_id - players
-	for i := range matchIds {
-		// 找到这局的玩家
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
-		matchToPlayers[matchIds[i]] = localPlayers
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				continue
+	timeToData := map[int64][6]uint64{} // 当天最晚时间戳 - [单排次数, 双排次数, 三黑次数, 四黑次数, jjl, jjl对应时间戳]
+	_, myPlays, marks, _, _ := MarkTeam(PlayerID, 0)
+	for i := range myPlays {
+		thatTime := time.Unix(int64(myPlays[i].CreateTime), 0)
+		latest := time.Date(thatTime.Year(), thatTime.Month(), thatTime.Day(), 23, 59, 59, 0, time.Local).Unix()
+		if v, ok := timeToData[latest]; ok {
+			v[marks[i]]++
+			if myPlays[i].FV > int(v[4]) {
+				v[4] = uint64(myPlays[i].FV)
+				v[5] = myPlays[i].CreateTime
 			}
-			if localPlayers[j].Side == sides[i] {
-				allyInfo[localPlayers[j].PlayerID]++
-			} else {
-				enermyInfo[localPlayers[j].PlayerID]++
-			}
-		}
-	}
-
-	sortedAllies := [][2]uint64{}
-	for k, v := range allyInfo {
-		sortedAllies = append(sortedAllies, [2]uint64{k, uint64(v)})
-	}
-	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][1] > sortedAllies[j][1] })
-	top10Allies := sortedAllies[:10]
-	contain := func(arr [][2]uint64, id uint64) bool {
-		for i := range arr {
-			// 包含在频次top10中
-			// 并且频次超过3把或者场次占比超过2%
-			// 则认为是开黑队友
-			cnt := arr[i][1] - uint64(enermyInfo[id])
-			if arr[i][0] == id && cnt >= 3 {
-				return true
-			}
-		}
-		return false
-	}
-
-	for _, players := range matchToPlayers {
-		cnt := 0
-		for i := range players {
-			if players[i].PlayerID == PlayerID {
-				continue
-			}
-			if contain(top10Allies, players[i].PlayerID) {
-				cnt++
-			}
-		}
-		cnt = min(cnt, 3)
-
-		tmp := time.Unix(int64(players[0].CreateTime), 0)
-		timestamp := time.Date(tmp.Year(), tmp.Month(), tmp.Day(), 23, 59, 59, 0, time.Local).Unix()
-		if v, ok := timeToData[timestamp]; ok {
-			v[cnt] += 1
-			timeToData[timestamp] = v
+			timeToData[latest] = v
 		} else {
-			tmp := [6]uint64{0, 0, 0, 0, 0, 0}
-			tmp[cnt] += 1
-			timeToData[timestamp] = tmp
-		}
-	}
-
-	// 获得团分情况
-	players := []db.Player{}
-	db.SqlDB.Model(db.Player{}).Where("player_id = ?", PlayerID).Find(&players)
-	for i := range players {
-		tmp := time.Unix(int64(players[i].CreateTime), 0)
-		timestamp := time.Date(tmp.Year(), tmp.Month(), tmp.Day(), 23, 59, 59, 0, time.Local).Unix()
-		if v, ok := timeToData[timestamp]; ok {
-			if uint64(players[i].CreateTime) >= v[5] {
-				v[5] = uint64(players[i].CreateTime)
-				v[4] = uint64(players[i].FV)
-				timeToData[timestamp] = v
+			v := [6]uint64{}
+			v[marks[i]]++
+			if myPlays[i].FV > int(v[4]) {
+				v[4] = uint64(myPlays[i].FV)
+				v[5] = myPlays[i].CreateTime
 			}
-		} else {
-			tmp := [6]uint64{0, 0, 0, 0, uint64(players[i].FV), uint64(players[i].CreateTime)}
-			timeToData[timestamp] = tmp
+			timeToData[latest] = v
 		}
 	}
-
 	// 按照时间戳排序
 	sortedData := [][7]uint64{}
 	for timestamp, data := range timeToData {
@@ -360,11 +180,6 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 		sortedData = append(sortedData, tmp)
 	}
 	sort.Slice(sortedData, func(i, j int) bool { return sortedData[i][0] < sortedData[j][0] })
-
-	// fmt.Printf("len(sortedData): %v\n", len(sortedData))
-	// str := FormatJson(sortedData[:10], true)
-	// fmt.Printf("str: %v\n", str)
-
 	// 插入第一条
 	timeRange = append(timeRange, time.Unix(int64(sortedData[0][0]), 0).Format(time.DateOnly))
 	jjl = append(jjl, sortedData[0][5])
@@ -383,62 +198,65 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 		jjl = append(jjl, sortedData[i][5])
 		team = append(team, [4]uint64{sortedData[i][1], sortedData[i][2], sortedData[i][3], sortedData[i][4]})
 	}
-
-	// fmt.Printf("timeRange: %v\n", timeRange)
 	return
 }
 
 // JJLCompositionAnalysis jjl成分分析
 //
-//	team:
-//		team[*][0] - (*+1)黑上分
-//		team[*][1] - (*+1)黑掉分
-//		team[*][2] - (*+1)黑场次
-func JJLCompositionAnalysis(PlayerID uint64) (team [4][3]float64, scope [6][3]float64, hero map[int][3]float64, total int) {
-	matches, myPlays, marks := MarkTeam(PlayerID)
+//	gangUp:
+//		gangUp[*][0] - (*+1)黑上分
+//		gangUp[*][1] - (*+1)黑掉分
+//		gangUp[*][2] - (*+1)黑场次
+//	allies: 队友情况
+//	enermies: 敌人分段情况
+//	scope: 比赛分段情况
+//	hero: 英雄情况
+//	total: 总计
+func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]float64, allies map[uint64][3]float64, enermies [][3]float64, scope [][3]float64, hero map[int][3]float64, total int) {
+	matches, myPlays, marks, _, top10Allies := MarkTeam(PlayerID, span)
 	total = len(matches)
 	hero = map[int][3]float64{}
+	allies = map[uint64][3]float64{}
+	enermies = make([][3]float64, len(DefaultJJLCategoryKeys))
+	scope = make([][3]float64, len(DefaultJJLCategoryKeys))
+	for i := range top10Allies {
+		allies[top10Allies[i][0]] = [3]float64{}
+	}
 	for i := range matches {
+		var offset float64
 		if i == 0 {
-			continue
+			offset = 0
+		} else {
+			offset = float64(myPlays[i].FV - myPlays[i-1].FV)
 		}
-		offset := float64(myPlays[i].FV - myPlays[i-1].FV)
 		tr := func(fv float64) int {
 			if fv >= 0 {
 				return 0
-			} else {
-				return 1
 			}
+			return 1
 		}
 		// 开黑情况
-		team[marks[i]][tr(offset)] += offset
-		team[marks[i]][2]++
-		// 范围情况
+		gangUp[marks[i]][tr(offset)] += offset
+		gangUp[marks[i]][2]++
+		avg := 0
+		// 敌人分段情况
 		for _, player := range matches[i].Players {
+			avg += player.FV
 			if player.Side == myPlays[i].Side {
+				// 队友情况
+				if v, ok := allies[player.PlayerID]; ok {
+					v[tr(offset)] += offset / float64(marks[i])
+					v[2]++
+					allies[player.PlayerID] = v
+				}
 				continue
 			}
-			fv := player.FV
-			if fv < 1500 {
-				scope[0][2]++
-				scope[0][tr(offset)] += offset / 7
-			} else if 1500 <= fv && fv < 1700 {
-				scope[1][2]++
-				scope[1][tr(offset)] += offset / 7
-			} else if 1700 <= fv && fv < 1800 {
-				scope[2][2]++
-				scope[2][tr(offset)] += offset / 7
-			} else if 1800 <= fv && fv < 1900 {
-				scope[3][2]++
-				scope[3][tr(offset)] += offset / 7
-			} else if 1900 <= fv && fv < 2000 {
-				scope[4][2]++
-				scope[4][tr(offset)] += offset / 7
-			} else if 2000 <= fv {
-				scope[5][2]++
-				scope[5][tr(offset)] += offset / 7
-			}
+			enermies[DefaultJJLCategoryKeys.Index(float64(player.FV))][2]++
+			enermies[DefaultJJLCategoryKeys.Index(float64(player.FV))][tr(offset)] += offset / 7
 		}
+		// 比赛分段情况
+		scope[DefaultJJLCategoryKeys.Index(float64(avg)/14)][2]++
+		scope[DefaultJJLCategoryKeys.Index(float64(avg)/14)][tr(offset)] += offset
 		// 英雄情况
 		if v, ok := hero[myPlays[i].HeroID]; ok {
 			v[2]++
@@ -455,7 +273,7 @@ func JJLCompositionAnalysis(PlayerID uint64) (team [4][3]float64, scope [6][3]fl
 
 // 安定段位分析
 func StableJJLLAnalysis(PlayerID uint64) (stable int) {
-	matches, myPlays, _ := MarkTeam(PlayerID)
+	matches, myPlays, _, _, _ := MarkTeam(PlayerID, 0)
 	if len(matches) == 0 {
 		return 0
 	}
@@ -517,65 +335,96 @@ func StableJJLLAnalysis(PlayerID uint64) (stable int) {
 // 标记开黑情况
 //
 //	matches: 按照时间戳排序的比赛记录
+//	myPlays: 比赛对应的自己游玩记录
 //	marks: 比赛对应的开黑，0单排，3四黑
-func MarkTeam(PlayerID uint64) (matches []db.Match, myPlays []db.Player, marks []int) {
-	matchIDs, _ := getMatchIdsAndSides(PlayerID)
-	err := db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs).Order("create_time asc").Find(&matches).Error
-	if err != nil || len(matches) == 0 {
+//	marksDetail: 比赛对应开黑的队友
+//	allies:
+//		allies[*][0]: id
+//		allies[*][1]: 出现次数
+//		allies[*][2]: 胜利次数
+func MarkTeam(PlayerID uint64, span time.Duration) (matches []db.Match, myPlays []db.Player, marks []int, marksDetail [][]string, allies [][4]uint64) {
+	matches, myPlays = GetMatchAndMyPlays(PlayerID, span)
+	if len(matches) == 0 {
 		return
 	}
-	allyInfo := map[uint64]int{}
-	enermyInfo := map[uint64]int{}
-	for _, match := range matches {
+	allyInfo := map[uint64][2]int{}
+	enermyInfo := map[uint64][2]int{}
+	for i, match := range matches {
 		// 先找到自己
-		var me db.Player
-		for _, player := range match.Players {
-			if player.PlayerID == PlayerID {
-				me = player
-				break
-			}
-		}
-		myPlays = append(myPlays, me)
+		me := myPlays[i]
 		// 初始化开黑情况
 		for _, player := range match.Players {
 			if player.PlayerID == PlayerID {
 				continue
 			}
 			if player.Side == me.Side {
-				allyInfo[player.PlayerID]++
+				if v, ok := allyInfo[player.PlayerID]; ok {
+					v[0]++
+					if me.Result == 1 || me.Result == 3 {
+						v[1]++
+					}
+					allyInfo[player.PlayerID] = v
+				} else {
+					v := [2]int{1, 0}
+					if me.Result == 1 || me.Result == 3 {
+						v[1]++
+					}
+					allyInfo[player.PlayerID] = v
+				}
 			} else {
-				enermyInfo[player.PlayerID]++
+				if v, ok := enermyInfo[player.PlayerID]; ok {
+					v[0]++
+					if me.Result == 1 || me.Result == 3 {
+						v[1]++
+					}
+					enermyInfo[player.PlayerID] = v
+				} else {
+					v := [2]int{1, 0}
+					if me.Result == 1 || me.Result == 3 {
+						v[1]++
+					}
+					enermyInfo[player.PlayerID] = v
+				}
 			}
 		}
 	}
-	sortedAllies := [][2]uint64{}
+	sortedAllies := [][4]uint64{}
 	for k, v := range allyInfo {
-		sortedAllies = append(sortedAllies, [2]uint64{k, uint64(v)})
+		if v[0] > 3 {
+			cnt := max(v[0]-enermyInfo[k][0], 0)
+			sortedAllies = append(sortedAllies, [4]uint64{k, uint64(v[0]), uint64(v[1]), uint64(cnt)})
+		}
 	}
-	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][1] > sortedAllies[j][1] })
-	top10Allies := sortedAllies[:10]
-	isGangUp := func(arr [][2]uint64, id uint64) bool {
+	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][3] > sortedAllies[j][3] })
+	top10Allies := [][4]uint64{}
+	for i := range sortedAllies {
+		if i >= 10 || sortedAllies[i][3] <= 3 {
+			top10Allies = sortedAllies[:i]
+			break
+		}
+	}
+	isGangUp := func(arr [][4]uint64, id uint64) bool {
 		for i := range arr {
-			// 包含在频次top10中
-			// 并且频次超过3把
-			cnt := arr[i][1] - uint64(enermyInfo[id])
-			if arr[i][0] == id && cnt > 3 {
+			if arr[i][0] == id && arr[i][3] > 3 {
 				return true
 			}
 		}
 		return false
 	}
-	for i, _ := range matches {
+	for i := range matches {
 		cnt := 0
+		tmp := []string{}
 		for _, player := range matches[i].Players {
 			if player.Side == myPlays[i].Side && isGangUp(top10Allies, player.PlayerID) {
 				cnt++
+				tmp = append(tmp, player.Name)
 			}
 		}
 		cnt = min(cnt, 3)
 		marks = append(marks, cnt)
+		marksDetail = append(marksDetail, tmp)
 	}
-	return
+	return matches, myPlays, marks, marksDetail, top10Allies
 }
 
 // FormatJson 格式化Json以便更容器查看, 如果m格式错误则返回空字符串

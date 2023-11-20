@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"eebot/bot/router"
-	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"eebot/g"
@@ -46,16 +45,6 @@ var CollectDataCmd = &cobra.Command{
 		db.InitRedis()
 		db.InitMysql()
 		collect.Crawler.IncrementalCrawl()
-	},
-}
-
-var RefreshIntervalCmd = &cobra.Command{
-	Use:   "300-refresh-interval",
-	Short: "refresh intervals of players for shuffle anslysis (may block 300 bot service)",
-	Run: func(cmd *cobra.Command, args []string) {
-		db.InitRedis()
-		db.InitMysql()
-		analysis.InitMatchInterval()
 	},
 }
 

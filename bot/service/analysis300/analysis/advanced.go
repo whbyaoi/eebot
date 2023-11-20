@@ -1,11 +1,8 @@
 package analysis
 
 import (
-	"eebot/bot/service/analysis300/db"
 	"math"
-	"slices"
 	"sort"
-	"time"
 )
 
 // ShuffleAnalysis 洗牌分析
@@ -15,15 +12,12 @@ import (
 //	2、开黑小号秒的情况
 //	return: 平均游戏开启时间间隔(仅仅计算2个小时内的时间间隔)
 func ShuffleAnalysis(PlayerID uint64) (avgInterval int, than10min int, validCnt int) {
-	matchIds, _ := getMatchIdsAndSides(PlayerID)
+	matches, _ := GetMatchAndMyPlays(PlayerID, 0)
 
-	times := make([][2]uint64, 0, len(matchIds)) // [开始时间, 结束时间]
+	times := make([][2]uint64, 0, len(matches)) // [开始时间, 结束时间]
 
-	for i := range matchIds {
-		var match db.Match
-		db.SqlDB.Model(&db.Match{}).Where("match_id = ?", matchIds[i]).First(&match)
-
-		times = append(times, [2]uint64{match.CreateTime - match.UsedTime, match.CreateTime})
+	for i := range matches {
+		times = append(times, [2]uint64{matches[i].CreateTime - matches[i].UsedTime, matches[i].CreateTime})
 	}
 
 	sort.Slice(times, func(i, j int) bool { return times[i][0] < times[j][0] })
@@ -44,192 +38,57 @@ func ShuffleAnalysis(PlayerID uint64) (avgInterval int, than10min int, validCnt 
 	return
 }
 
-// TeamAnalysisAdvanced 进阶开黑分析(开黑胜率，开几黑)
-//
-//	return: sortedAllies [][3]uint64
-//			- sortedAllies[*][0] -- PlayerID
-//			- sortedAllies[*][1] -- 胜场
-//			- sortedAllies[*][2] -- 场次
-//
-//			teams [4][2]uint64
-//			- teams[*][0] -- 开(*+1)黑胜场
-//			- teams[*][1] -- 开(*+1)黑场次
-func TeamAnalysisAdvanced(PlayerID uint64) (sortedAllies [][3]uint64, sortedEnermies [][3]uint64, teams [4][2]uint64, teamAllies map[int]map[string]struct{}, total int) {
-	matchIds, sides := getMatchIdsAndSides(PlayerID)
-
-	total = len(matchIds)
-	allyInfo := map[uint64][2]int{} // playerID -- [win, total]
-	enermyInfo := map[uint64][2]int{}
-	matchToPlayers := map[string][]db.Player{}
-	for i := range matchIds {
-		// 找到这局的玩家
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
-		matchToPlayers[matchIds[i]] = localPlayers
-
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				continue
-			}
-			// 队友还是敌人
-			if localPlayers[j].Side == sides[i] {
-				// 胜还是负
-				if v, ok := allyInfo[localPlayers[j].PlayerID]; ok {
-					v[1]++
-					if localPlayers[j].Result == 1 || localPlayers[j].Result == 3 {
-						v[0]++
-					}
-					allyInfo[localPlayers[j].PlayerID] = v
-				} else {
-					if localPlayers[j].Result == 1 || localPlayers[j].Result == 3 {
-						allyInfo[localPlayers[j].PlayerID] = [2]int{1, 1}
-					} else {
-						allyInfo[localPlayers[j].PlayerID] = [2]int{0, 1}
-					}
-				}
-			} else {
-				if v, ok := enermyInfo[localPlayers[j].PlayerID]; ok {
-					v[1]++
-					if localPlayers[j].Result == 2 || localPlayers[j].Result == 4 {
-						v[0]++
-					}
-					enermyInfo[localPlayers[j].PlayerID] = v
-				} else {
-					if localPlayers[j].Result == 2 || localPlayers[j].Result == 4 {
-						enermyInfo[localPlayers[j].PlayerID] = [2]int{1, 1}
-					} else {
-						enermyInfo[localPlayers[j].PlayerID] = [2]int{0, 1}
-					}
-				}
-			}
-		}
-	}
-
-	// map to array
-	for k, v := range allyInfo {
-		sortedAllies = append(sortedAllies, [3]uint64{k, uint64(v[0]), uint64(v[1])})
-	}
-	for k, v := range enermyInfo {
-		sortedEnermies = append(sortedEnermies, [3]uint64{k, uint64(v[0]), uint64(v[1])})
-	}
-
-	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][2] > sortedAllies[j][2] })
-	sort.Slice(sortedEnermies, func(i int, j int) bool { return sortedEnermies[i][2] > sortedEnermies[j][2] })
-
-	// 进阶分析
-	top10Allies := sortedAllies[:10]
-	contain := func(slice [][3]uint64, id uint64) bool {
-		for i := range slice {
-			// 包含在频次top10中
-			// 则认为是开黑队友
-			cnt := slice[i][2]
-			if arr, ok := enermyInfo[id]; ok {
-				cnt -= uint64(arr[1])
-			}
-			if slice[i][0] == id && cnt >= 3 {
-				return true
-			}
-		}
-		return false
-	}
-
-	teamAllies = make(map[int]map[string]struct{})
-	for _, localPlayers := range matchToPlayers {
-
-		cnt := 0
-		var me db.Player
-		names := make([]string, 0, 4)
-		// 是否包含在高频队友内
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				me = localPlayers[j]
-				continue
-			}
-			if contain(top10Allies, localPlayers[j].PlayerID) {
-				names = append(names, localPlayers[j].Name)
-				cnt++
-			}
-		}
-		// 对应开黑+1
-		if cnt >= 4 {
-			cnt = 3
-		}
-		if me.Result == 1 || me.Result == 3 {
-			teams[cnt][0]++
-		}
-		teams[cnt][1]++
-		for _, name := range names {
-			if teamAllies[cnt] == nil {
-				teamAllies[cnt] = make(map[string]struct{})
-			}
-			teamAllies[cnt][name] = struct{}{}
-		}
-	}
-
-	return
-}
-
 // WinOrLoseAnalysisAdvanced 进阶输赢分析(是否匹配当前分数段)
 //
-//	jjl[0-13]: 14个人的jjl
 //	result[0]: 己方均分
 //	result[1]: 敌方均分
 //	result[2]: 输赢 1-赢，2-输
 //	result[3]: 自己团分
 //	result[4]: 局类型 0-杀鸡，1-本地，2-壮丁
+//	result[5]: 均分
 //	diff: 玩家分相对场均分差
 //	svd: 离散度差
 //	fixDiff: 修正双方均分差
 //	fvNow: 目前团分
 //	timeRange: 时间范围
-func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd int, fixDiff int, fixCount, fvNow int, timeRange [2]uint64) {
-	matchIds, sides := getMatchIdsAndSides(PlayerID)
-
-	timeRange[0] = uint64(time.Now().Unix())
-	var maxTimestamps uint64
-	for i := range matchIds {
-		var selfFV int
-		var localPlayers []db.Player
-		db.SqlDB.Model(&db.Player{}).Where("match_id = ?", matchIds[i]).Find(&localPlayers)
-
-		var tmp [5]int
+func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff int, svd int, fvNow int, timeRange [2]uint64) {
+	matches, myPlays := GetMatchAndMyPlays(PlayerID, 0)
+	if len(matches) == 0 {
+		return
+	}
+	timeRange[0] = matches[0].CreateTime
+	timeRange[1] = matches[len(matches)-1].CreateTime
+	fvNow = myPlays[len(myPlays)-1].FV
+	for i := range matches {
+		var tmp [6]float64
 		fvSum1 := 0 // 己方团分
 		fvSum2 := 0 // 对面团分
-		fvArr := make([]int, 0, 7)
-		fvArr2 := make([]int, 0, 7)
-		for j := range localPlayers {
-			if localPlayers[j].PlayerID == PlayerID {
-				tmp[2] = localPlayers[j].Result
-				selfFV = localPlayers[j].FV
-				timeRange[0] = min(localPlayers[j].CreateTime, timeRange[0])
-				timeRange[1] = max(localPlayers[j].CreateTime, timeRange[1])
-				if localPlayers[j].CreateTime >= maxTimestamps {
-					maxTimestamps = localPlayers[j].CreateTime
-					fvNow = selfFV
-				}
+		for j := range matches[i].Players {
+			tmp[5] += float64(matches[i].Players[j].FV)
+			if matches[i].Players[j].PlayerID == PlayerID {
+				tmp[2] = float64(matches[i].Players[j].Result)
 			}
-			if localPlayers[j].Side == sides[i] {
-				fvSum1 += localPlayers[j].FV
-				fvArr = append(fvArr, localPlayers[j].FV)
+			if matches[i].Players[j].Side == myPlays[i].Side {
+				fvSum1 += matches[i].Players[j].FV
 			} else {
-				fvSum2 += localPlayers[j].FV
-				fvArr2 = append(fvArr2, localPlayers[j].FV)
+				fvSum2 += matches[i].Players[j].FV
 			}
 		}
-		tmp[0] = fvSum1 / 7
-		tmp[1] = fvSum2 / 7
-		tmp[3] = selfFV
+		tmp[0] = float64(fvSum1 / 7)
+		tmp[1] = float64(fvSum2 / 7)
+		tmp[3] = float64(myPlays[i].FV)
+		tmp[5] /= 14
 
-		diff += selfFV - (tmp[0]+tmp[1])/2
+		diff += myPlays[i].FV - int((tmp[0]+tmp[1])/2)
 
 		// 计算标准差
 		_svd1 := 0
 		_svd2 := 0
-		for j := range localPlayers {
-			if localPlayers[j].Side == sides[i] {
-				_svd1 += (localPlayers[j].FV - tmp[0]) * (localPlayers[j].FV - tmp[0])
+		for j := range matches[i].Players {
+			if matches[i].Players[j].Side == myPlays[i].Side {
+				_svd1 += (matches[i].Players[j].FV - int(tmp[0])) * (matches[i].Players[j].FV - int(tmp[0]))
 			} else {
-				_svd2 += (localPlayers[j].FV - tmp[1]) * (localPlayers[j].FV - tmp[1])
+				_svd2 += (matches[i].Players[j].FV - int(tmp[1])) * (matches[i].Players[j].FV - int(tmp[1]))
 			}
 		}
 		_svd1 = int(math.Sqrt(float64(_svd1) / 6))
@@ -240,21 +99,21 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 		tmp[4] = 1
 		avg := (tmp[0] + tmp[1]) / 2
 		// 只要自己团分比均分低100，直接判断为壮丁局
-		if selfFV-avg < -100 {
+		if tmp[3]-avg < -100 {
 			tmp[4] = 2
 		}
 		// 自己团分比均分高100
 		// 找到对面有没有比自己高或者和自己团分相似的人，若没有，则是杀鸡
-		if selfFV-avg > 100 {
+		if tmp[3]-avg > 100 {
 			flag := false
-			for j := range localPlayers {
-				if localPlayers[j].PlayerID == PlayerID {
+			for j := range matches[i].Players {
+				if matches[i].Players[j].PlayerID == PlayerID {
 					continue
 				}
-				if localPlayers[j].Side == sides[i] {
+				if matches[i].Players[j].Side == myPlays[i].Side {
 					continue
 				} else {
-					if localPlayers[j].FV >= selfFV || IsSimilarFV(selfFV, localPlayers[j].FV) {
+					if float64(matches[i].Players[j].FV) >= tmp[3] || IsSimilarFV(int(tmp[3]), matches[i].Players[j].FV) {
 						flag = true
 						break
 					}
@@ -264,24 +123,11 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][5]int, diff int, svd 
 				tmp[4] = 0
 			}
 		}
-
-		// 计算修正均分差
-		slices.Sort[[]int](fvArr)
-		slices.Sort[[]int](fvArr2)
-		index, _ := slices.BinarySearch[[]int](fvArr, selfFV)
-		fvSum1 -= fvArr[index]
-		fvSum2 -= fvArr2[index]
-		fixDiff += (fvSum1 - fvSum2) / 6
-		if fvSum1 > fvSum2 {
-			fixCount++
-		}
-
 		result = append(result, tmp)
 	}
-	if len(matchIds) != 0 {
-		diff /= len(matchIds)
-		svd /= len(matchIds)
-		fixDiff /= len(matchIds)
+	if len(matches) != 0 {
+		diff /= len(matches)
+		svd /= len(matches)
 	}
 	return
 }

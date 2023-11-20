@@ -65,7 +65,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 	}
 	switch svc {
 	case "t": // 开黑
-		suffix, err = analysis300.ExportTeamAnalysisAdvanced(name)
+		suffix, err = analysis300.ExportTeamAnalysis(name)
 	case "n": // 常规
 		suffix, err = analysis300.ExportWinOrLoseAnalysisAdvanced(name)
 	case "s": // 洗牌
@@ -141,7 +141,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			err = errors.New("无权使用该指令")
 			break
 		}
-		tmp, err := analysis300.ExportTeamAnalysisAdvanced(name)
+		tmp, err := analysis300.ExportTeamAnalysis(name)
 		if err != nil {
 			break
 		}

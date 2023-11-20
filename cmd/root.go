@@ -23,7 +23,6 @@ func init() {
 
 	rootCmd.AddCommand(Analysis300Cmd)
 	rootCmd.AddCommand(CollectDataCmd)
-	rootCmd.AddCommand(RefreshIntervalCmd)
 	rootCmd.AddCommand(AddTimestampCmd)
 	rootCmd.AddCommand(TranTimestampCmd)
 }
