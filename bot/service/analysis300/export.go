@@ -634,53 +634,41 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 
 func ExportActiveAnalysis() (msg string, err error) {
 	now := time.Now()
-	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(-7 * 24 * 60 * 60 * time.Second)
+	matches := []db.Match{}
+	db.SqlDB.Model(db.Match{}).Where("create_time > ?", t0.Unix()).Find(&matches)
+	matchIDs := []string{}
+	for i := range matches {
+		matchIDs = append(matchIDs, matches[i].MatchID)
+	}
 	type result struct {
 		PlayerID uint64
 		FV       int
 	}
-	players := []result{}
-	db.SqlDB.Raw("select player_id, max(fv) fv from players where create_time > ? group by player_id", t0.Unix()-7*24*60*60).Scan(&players)
-
-	ranges := []string{"0-1000", "1000-1300", "1300-1500", "1500-1600", "1600-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2100", "2100-2200", "2200-"}
-	count := []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	for i := range players {
-		fv := players[i].FV
-		if fv < 1000 {
-			count[0]++
-		} else if 1000 <= fv && fv < 1300 {
-			count[1]++
-		} else if 1300 <= fv && fv < 1500 {
-			count[2]++
-		} else if 1500 <= fv && fv < 1600 {
-			count[3]++
-		} else if 1600 <= fv && fv < 1700 {
-			count[4]++
-		} else if 1700 <= fv && fv < 1800 {
-			count[5]++
-		} else if 1800 <= fv && fv < 1900 {
-			count[6]++
-		} else if 1900 <= fv && fv < 2000 {
-			count[7]++
-		} else if 2000 <= fv && fv < 2100 {
-			count[8]++
-		} else if 2100 <= fv && fv < 2200 {
-			count[9]++
-		} else if 2200 <= fv {
-			count[10]++
+	allPlays := map[uint64]int{}
+	step := 1000
+	for start := 0;start < len(matchIDs); start+=step {
+		plays := []result{}
+		db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:start+step]).Scan(&plays)
+		for i := range plays{
+			allPlays[plays[i].PlayerID] = max(allPlays[plays[i].PlayerID], plays[i].FV)
 		}
+	}
+	count := make([]int, len(analysis.DefaultJJLCategoryKeys))
+	for _, fv := range allPlays {
+		count[analysis.DefaultJJLCategoryKeys.Index(float64(fv))]++
 	}
 
 	items := make([]opts.PieData, 0)
 	for i := range count {
-		name := fmt.Sprintf("%s(%.2f%%)", ranges[i], float64(count[i])/float64(len(players))*100)
+		name := fmt.Sprintf("%s(%.2f%%)", analysis.DefaultJJLCategoryKeys[i], float64(count[i])/float64(len(allPlays))*100)
 		items = append(items, opts.PieData{Name: name, Value: count[i]})
 	}
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
 			Title:    "过去七天活跃玩家数量及分布(仅供参考)",
-			Subtitle: fmt.Sprintf("玩家总数：%d", len(players)),
+			Subtitle: fmt.Sprintf("玩家总数：%d", len(allPlays)),
 			Top:      "0%",
 			Left:     "10%",
 		}),
