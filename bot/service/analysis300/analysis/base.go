@@ -122,7 +122,12 @@ func HeroAnalysis(PlayerID uint64, fv int) (result [][29]float64, total uint64) 
 }
 
 func GetMatchAndMyPlays(PlayerID uint64, span time.Duration) (matches []db.Match, myPlays []db.Player) {
-	db.SqlDB.Model(&db.Player{}).Where("player_id = ? and create_time > ?", PlayerID, time.Now().Add(-span).Unix()).Order("create_time asc").Find(&myPlays)
+	if span > 0 {
+		db.SqlDB.Model(&db.Player{}).Where("player_id = ? and create_time > ?", PlayerID, time.Now().Add(-span).Unix()).Order("create_time asc").Find(&myPlays)
+	} else {
+		db.SqlDB.Model(&db.Player{}).Where("player_id = ?", PlayerID).Order("create_time asc").Find(&myPlays)
+	}
+
 	matchIds := make([]string, 0, len(myPlays))
 	for i := range myPlays {
 		matchIds = append(matchIds, myPlays[i].MatchID)
@@ -137,7 +142,7 @@ func GetMatchAndMyPlays(PlayerID uint64, span time.Duration) (matches []db.Match
 func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 	if id, ok := db.HeroNameToID[HeroName]; ok {
 		start := time.Now().Unix() - ExpiryDate
-		err = db.SqlDB.Model(db.Player{}).Where("hero_id = ? and create_time > ?", id, start).Find(&players).Error
+		err = db.SqlDB.Model(db.Player{}).Where("create_time > ? and hero_id = ?", start, id).Find(&players).Error
 		return
 	}
 	return nil, fmt.Errorf("不存在 %s 该英雄", HeroName)

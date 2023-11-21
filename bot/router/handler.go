@@ -76,7 +76,7 @@ func messageHandler(b []byte) (err error) {
 				Action: "send_private_msg",
 				Params: model.PrivateMessageParams{
 					GroupMessageParams: model.GroupMessageParams{
-						Message:    fmt.Sprintf("%s: 处理 %d 群聊消息 %s 完毕", time.Now().Format(time.TimeOnly), source, messageBase.RawMessage),
+						Message:    fmt.Sprintf("%s: 处理 %d 群聊消息 %s 完毕，耗时 %v", time.Now().Format(time.TimeOnly), source, messageBase.RawMessage, time.Since(t0)),
 						AutoEscape: false,
 					},
 					UserID: g.Config.GetInt64("report-id"),
