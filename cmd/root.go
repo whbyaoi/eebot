@@ -24,7 +24,7 @@ func init() {
 	rootCmd.AddCommand(Analysis300Cmd)
 	rootCmd.AddCommand(CollectDataCmd)
 	rootCmd.AddCommand(AddTimestampCmd)
-	rootCmd.AddCommand(TranTimestampCmd)
+	rootCmd.AddCommand(UpdatePlayerSetCmd)
 }
 
 func Execute() error {

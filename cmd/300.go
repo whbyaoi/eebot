@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"eebot/bot/router"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
@@ -48,6 +47,16 @@ var CollectDataCmd = &cobra.Command{
 	},
 }
 
+var UpdatePlayerSetCmd = &cobra.Command{
+	Use:   "300-update-player-set",
+	Short: "Update the player set of redis for 300-collect command",
+	Run: func(cmd *cobra.Command, args []string) {
+		db.InitRedis()
+		db.InitMysql()
+		collect.Crawler.UpdatePlayerSet()
+	},
+}
+
 var AddTimestampCmd = &cobra.Command{
 	Use:   "300-add-timestamp",
 	Short: "add timestamp to table players (may block 300 bot service)",
@@ -64,24 +73,5 @@ var AddTimestampCmd = &cobra.Command{
 				fmt.Printf("%d over\n", i+1)
 			}
 		}
-	},
-}
-
-var TranTimestampCmd = &cobra.Command{
-	Use:   "300-tran",
-	Short: "",
-	Run: func(cmd *cobra.Command, args []string) {
-		db.InitRedis()
-		db.InitMysql()
-
-		playerIDs, err := db.RDB.LRange(context.Background(), "300analysis:player_list", 0, -1).Result()
-		if err != nil {
-			return
-		}
-		var data []interface{}
-		for i := range playerIDs {
-			data = append(data, playerIDs[i])
-		}
-		_ = db.RDB.SAdd(context.Background(), "300analysis:player_set", data...)
 	},
 }

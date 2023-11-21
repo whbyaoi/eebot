@@ -246,3 +246,16 @@ func (c *crawler) IncrementalCrawl() {
 		}
 	}
 }
+
+func (c *crawler) UpdatePlayerSet() {
+	type result struct {
+		PlayerID string
+	}
+	var results []result
+	db.SqlDB.Model(db.Player{}).Distinct("player_id").Select("player_id").Scan(&results)
+	ids := []interface{}{}
+	for i := range results {
+		ids = append(ids, results[i].PlayerID)
+	}
+	db.RDB.SAdd(Ctx, PlayerKeySet, ids...).Result()
+}
