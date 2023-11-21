@@ -230,7 +230,7 @@ func (hd *Rank) set(attr string, value float64) {
 
 // GetRankFromTop 返回降序评分前top
 func GetRankFromTop(HeroID int, fv int, top int) ([]*HeroData, int) {
-	slice, sorted := getRank(HeroID, fv)
+	slice, _, sorted := getRank(HeroID, fv)
 	if len(sorted["Score"]) < top {
 		slices.Reverse[[]*HeroData](sorted["Score"])
 		return sorted["Score"], len(slice)
@@ -241,17 +241,17 @@ func GetRankFromTop(HeroID int, fv int, top int) ([]*HeroData, int) {
 }
 
 func GetRankFromPlayers(HeroID int, fv int, PlayerID []uint64) (players map[uint64]*HeroData, n int) {
-	slice, _ := getRank(HeroID, fv)
+	slice, allSlice, _ := getRank(HeroID, fv)
 	players = map[uint64]*HeroData{}
-	for i := range slice {
-		if slices.Contains(PlayerID, slice[i].PlayerID) {
-			players[slice[i].PlayerID] = slice[i]
+	for i := range allSlice {
+		if slices.Contains(PlayerID, allSlice[i].PlayerID) {
+			players[allSlice[i].PlayerID] = allSlice[i]
 		}
 	}
 	return players, len(slice)
 }
 
-func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDataSlice []*HeroData) {
+func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDataSlice []*HeroData, allHeroDataSlice []*HeroData) {
 	for playerID, plays := range idToData {
 		heroData := &HeroData{
 			PlayerID:    playerID,
@@ -294,11 +294,12 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			heroData.AvgJJL += float64(play.FV)
 			heroData.AvgUsedTime += float64(play.UsedTime)
 		}
+		allHeroDataSlice = append(allHeroDataSlice, heroData)
 		if heroData.Total >= ValidTimes {
 			heroDataSlice = append(heroDataSlice, heroData)
 		}
 	}
-	for _, heroData := range heroDataSlice {
+	for _, heroData := range allHeroDataSlice {
 		heroData.WinRate = heroData.Win / heroData.Total
 		heroData.AvgHit /= heroData.Total
 		heroData.AvgKill /= heroData.Total
@@ -327,16 +328,16 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 	return
 }
 
-func getRank(HeroID int, fv int) ([]*HeroData, map[string][]*HeroData) {
+func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroData) {
 	var players []db.Player
-	start := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
+	start := time.Now().Unix() - ExpiryDate
 	db.SqlDB.Model(db.Player{}).Where("create_time > ? and hero_id = ?", start, HeroID).Order("create_time desc").Find(&players)
 	idToRecord := map[uint64][]*db.Player{}
 	for i := range players {
 		idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], &players[i])
 	}
 
-	heroDataSlice := CalculateData(idToRecord, fv, HeroID)
+	heroDataSlice, allHeroDataSlice := CalculateData(idToRecord, fv, HeroID)
 	clear(players)
 	clear(idToRecord)
 	// 排序
@@ -370,5 +371,5 @@ func getRank(HeroID int, fv int) ([]*HeroData, map[string][]*HeroData) {
 	for rank, heroData := range sortedData[attr] {
 		heroData.Rank.set(attr, float64(rank)/float64(len(sortedData[attr])-1)*100)
 	}
-	return heroDataSlice, sortedData
+	return heroDataSlice, allHeroDataSlice, sortedData
 }

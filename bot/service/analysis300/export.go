@@ -362,7 +362,7 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 		}
 	}
 
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d, 出现次数：%d\n", HeroName, fv, all)
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d, 出现次数：%d(最近30天)\n", HeroName, fv, all)
 	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", analysis.Divide(uint64(win), uint64(all))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%% (占比 / 场次 / 胜率，下同)\n", "1000-1500", analysis.Divide(uint64(range0), uint64(all))*100, range0, analysis.Divide(uint64(win0), uint64(range0))*100)
 	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1500-1700", analysis.Divide(uint64(range1), uint64(all))*100, range1, analysis.Divide(uint64(win1), uint64(range1))*100)
