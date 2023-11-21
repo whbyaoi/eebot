@@ -18,6 +18,64 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
+func ExportRelatedAnalysis(name string, hero string) (msg string, err error) {
+	PlayerID, err := collect.SearchRoleID(name)
+	if err != nil {
+		return
+	}
+	plays := []db.Player{}
+	if heroID, ok := db.HeroNameToID[hero]; ok {
+		err = db.SqlDB.Model(&db.Player{}).Where("player_id = ? and hero_id = ?", PlayerID, heroID).Order("create_time desc").Find(&plays).Error
+		msg += fmt.Sprintf("玩家：%s，最近十场JJC %s 战绩\n", name, hero)
+	} else {
+		if hero == "" {
+			err = db.SqlDB.Model(&db.Player{}).Where("player_id = ?", PlayerID).Order("create_time desc").Find(&plays).Error
+			msg += fmt.Sprintf("玩家：%s，最近十场JJC战绩\n", name)
+		} else {
+			return "", fmt.Errorf("不存在 %s 该英雄", hero)
+		}
+	}
+	if err != nil {
+		return
+	}
+	plays = plays[:10]
+	matches := []db.Match{}
+	for i := range plays {
+		tmp := db.Match{}
+		db.SqlDB.Model(&db.Match{}).Preload("Players").Where("match_id = ?", plays[i].MatchID).Take(&tmp)
+		matches = append(matches, tmp)
+	}
+	msg += "时间 输赢 英雄 k/d/a/补 我方/敌方均分\n"
+	for i := range matches {
+		sum1 := 0
+		sum2 := 0
+		for j := range matches[i].Players {
+			if matches[i].Players[j].Side == plays[i].Side {
+				sum1 += matches[i].Players[j].FV
+			} else {
+				sum2 += matches[i].Players[j].FV
+			}
+		}
+		sum1 /= 7
+		sum2 /= 7
+		result := "输"
+		if plays[i].Result == 1 || plays[i].Result == 3 {
+			result = "赢"
+		}
+		msg += fmt.Sprintf("%s %s %s %d/%d/%d/%d %d/%d\n",
+			time.Unix(int64(plays[i].CreateTime), 0).Format(time.DateOnly)[2:],
+			result,
+			db.HeroIDToName[plays[i].HeroID],
+			plays[i].KillPlayer,
+			plays[i].Death,
+			plays[i].Assist,
+			plays[i].KillUnit,
+			sum1,
+			sum2)
+	}
+	return
+}
+
 func ExportTeamAnalysis(name string) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
 	if err != nil {
@@ -647,10 +705,10 @@ func ExportActiveAnalysis() (msg string, err error) {
 	}
 	allPlays := map[uint64]int{}
 	step := 1000
-	for start := 0;start < len(matchIDs); start+=step {
+	for start := 0; start < len(matchIDs); start += step {
 		plays := []result{}
 		db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:start+step]).Scan(&plays)
-		for i := range plays{
+		for i := range plays {
 			allPlays[plays[i].PlayerID] = max(allPlays[plays[i].PlayerID], plays[i].FV)
 		}
 	}

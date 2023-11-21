@@ -20,6 +20,7 @@ var Analysis300Cmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		db.InitRedis()
 		db.InitMysql()
+		g.InitLog()
 		collect.InitCrawler()
 		if g.Config.GetBool("dev") {
 			go func() { http.ListenAndServe("0.0.0.0:8090", nil) }()
@@ -43,7 +44,8 @@ var CollectDataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		db.InitRedis()
 		db.InitMysql()
-		collect.Crawler.IncrementalCrawl()
+		g.InitLog()
+		collect.Crawler.AutoIncrementalCrawl()
 	},
 }
 
@@ -53,6 +55,7 @@ var UpdatePlayerSetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		db.InitRedis()
 		db.InitMysql()
+		g.InitLog()
 		collect.Crawler.UpdatePlayerSet()
 	},
 }
@@ -63,7 +66,7 @@ var AddTimestampCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		db.InitRedis()
 		db.InitMysql()
-
+		g.InitLog()
 		matches := []db.Match{}
 		db.SqlDB.Model(db.Match{}).Find(&matches)
 		fmt.Printf("total: %d\n", len(matches))

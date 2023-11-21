@@ -1,7 +1,11 @@
 cqhttp: 127.0.0.1:8083
 access-token: 114514
 dev: false
-auto-collect: true
+auto-collect: 
+  run: true
+  start: 0
+  end: 9
+  log: ./crawl.log
 
 analysis:
   mysql:
@@ -10,6 +14,6 @@ analysis:
     password: root@1234
     databse: 300match
   redis:
-    addr: localhost:6379
-    password:
+    addr: localhost:8089
+    password: root@1234
     db: 0

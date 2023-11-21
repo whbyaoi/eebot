@@ -17,8 +17,8 @@ func InitCrawler() {
 	Crawler.Auto = make(chan Request)
 	Crawler.User = make(chan Request)
 	go Crawler.Run()
-	if g.Config.GetBool("auto-collect") {
-		go Crawler.IncrementalCrawl()
+	if g.Config.GetBool("auto-collect.run") {
+		go Crawler.AutoIncrementalCrawl()
 	}
 }
 
@@ -51,7 +51,7 @@ func (c *crawler) Run() {
 			data, err := c.getMatchDetail(req.MatchID)
 			req.RespChan <- Response{Data: data, Err: err}
 		case autoReq := <-c.Auto:
-			if g.Config.GetBool("auto-collect") {
+			if g.Config.GetBool("auto-collect.run") {
 			Auto:
 				// 检查有没有User请求，如果有，先处理干净User请求
 				for {
@@ -215,18 +215,46 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 	return
 }
 
-// IncrementalCrawl 增量更新
-func (c *crawler) IncrementalCrawl() {
+// AutoIncrementalCrawl 增量更新
+func (c *crawler) AutoIncrementalCrawl() {
 	for {
 		now := time.Now()
-		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-		end := time.Date(now.Year(), now.Month(), now.Day(), 9, 0, 0, 0, time.Local)
+		start := time.Date(now.Year(), now.Month(), now.Day(), g.Config.GetInt("auto-collect.start"), 0, 0, 0, time.Local)
+		end := time.Date(now.Year(), now.Month(), now.Day(), g.Config.GetInt("auto-collect.end"), 0, 0, 0, time.Local)
 		if !(now.After(start) && now.Before(end)) {
-			wait := start.Add((24*60*60 + 10) * time.Second).Sub(now)
+			var wait time.Duration
+			if now.After(start) {
+				wait = start.Add((24*60*60 + 10) * time.Second).Sub(now)
+			} else {
+				wait = start.Sub(now)
+			}
 			g.CrawlLogger.Infof("增量更新停止: 当前时间%s不在更新时间段%s-%s内，等待%v", now.Format(time.TimeOnly), start.Format(time.TimeOnly), end.Format(time.TimeOnly), wait)
 			time.Sleep(wait)
 			g.CrawlLogger.Infof("增量更新开始")
 		}
+		playerID, err := db.RDB.SPop(Ctx, PlayerKeySet).Result()
+		if err != nil {
+			g.CrawlLogger.Error("增量更新错误: redis set pop, ", err.Error())
+			break
+		}
+		id, err := strconv.ParseUint(playerID, 10, 64)
+		if err != nil {
+			g.CrawlLogger.Error("增量更新错误: wrong type of player id, ", err.Error())
+			break
+		}
+		ids := c.CrawlAllAndSave(id, 1)
+		if len(ids) > 0 {
+			_, err = db.RDB.SAdd(Ctx, PlayerKeySet, ids...).Result()
+			if err != nil {
+				g.CrawlLogger.Error("增量更新错误: redis set add, ", err.Error())
+			}
+		}
+	}
+}
+
+func (c *crawler) ManualIncrementalCrawl() {
+	for {
+		g.CrawlLogger.Infof("增量更新开始")
 		playerID, err := db.RDB.SPop(Ctx, PlayerKeySet).Result()
 		if err != nil {
 			g.CrawlLogger.Error("增量更新错误: redis set pop, ", err.Error())

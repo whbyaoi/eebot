@@ -64,6 +64,12 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		}
 	}
 	switch svc {
+	case "r": // 最近
+		assgin := ""
+		if len(rawMessageSlice) > 3 {
+			assgin = rawMessageSlice[3]
+		}
+		suffix, err = analysis300.ExportRelatedAnalysis(name, assgin)
 	case "t": // 开黑
 		suffix, err = analysis300.ExportTeamAnalysis(name)
 	case "n": // 常规
@@ -165,6 +171,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "jjl 玩家 - 竞技力与开黑分析\n"
 		suffix += "jjl2 玩家 - 竞技力成分分析\n"
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
+		suffix += "r 玩家 [可选]英雄名称 - 近10场jjc数据\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析(各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
