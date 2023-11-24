@@ -290,12 +290,11 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 			cnt++
 		}
 	}
-	fmt.Printf("marksMap: %v\n", marksMap)
 	msg += fmt.Sprintf("昵称：%s(只会计算近30天战绩)\n", name)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
-	msg += fmt.Sprintf("单排率：%1.f%%\n", cnt/heroData.Total*100)
 	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
+	msg += fmt.Sprintf("单排率：%1.f%%\n", cnt/heroData.Total*100)
 	msg += fmt.Sprintf("净上分：%d，上分：%d，掉分：%d\n", int(jjl[db.HeroNameToID[hero]][0]+jjl[db.HeroNameToID[hero]][1]),
 		int(jjl[db.HeroNameToID[hero]][0]), int(jjl[db.HeroNameToID[hero]][1]))
 	msg += fmt.Sprintf("胜率：%.1f%% (超越%.1f%%的玩家，下同)\n", heroData.WinRate*100, heroData.Rank.WinRate)
