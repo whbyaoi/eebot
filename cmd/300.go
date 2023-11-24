@@ -4,10 +4,10 @@ import (
 	"eebot/bot/router"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
+	"eebot/bot/service/http"
 	"eebot/g"
 	"eebot/ws"
 	"fmt"
-	"net/http"
 	_ "net/http/pprof"
 	"time"
 
@@ -22,9 +22,6 @@ var Analysis300Cmd = &cobra.Command{
 		db.InitMysql()
 		g.InitLog()
 		collect.InitCrawler()
-		if g.Config.GetBool("dev") {
-			go func() { http.ListenAndServe("0.0.0.0:8090", nil) }()
-		}
 		for {
 			if err := ws.InitWebsocket(); err != nil {
 				continue
@@ -76,5 +73,17 @@ var AddTimestampCmd = &cobra.Command{
 				fmt.Printf("%d over\n", i+1)
 			}
 		}
+	},
+}
+
+var HttpCmd = &cobra.Command{
+	Use:   "300-http",
+	Short: "export service by http",
+	Run: func(cmd *cobra.Command, args []string) {
+		db.InitRedis()
+		db.InitMysql()
+		g.InitLog()
+		r := http.New()
+		r.Run(":8090")
 	},
 }

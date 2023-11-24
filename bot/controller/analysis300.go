@@ -188,6 +188,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
 		suffix += "g 英雄名称 - 全局英雄分析(各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
+		suffix += "topa 英雄名称 [可选]团分下限 - 月榜前10(附带计算详情)\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
 	case "test":
 		if !HasAuth(sourceID) {

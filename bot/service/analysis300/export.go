@@ -184,19 +184,18 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 			stages[analysis.DefaultJJLCategoryKeys.Index(rs[i][5])][1]++
 		}
 	}
-	suffix := "(占比 / 胜率 / 场次 / 净上分，下同)"
+	suffix := "(占比 / 胜率 / 场次 / 净上分，下同)\n"
+	msg += suffix
 	for i := range stages {
 		if stages[i][0] > 0 {
-			msg += fmt.Sprintf("%d-%d(%.1f%%)：%.1f%% / %d / %d%s\n",
+			msg += fmt.Sprintf("%d-%d(%.1f%%)：%.1f%% / %d / %d\n",
 				int(analysis.DefaultJJLCategoryKeys.GetRange(i)[0]),
 				int(analysis.DefaultJJLCategoryKeys.GetRange(i)[1]),
 				analysis.Divide[int](stages[i][0], len(rs))*100,
 				analysis.Divide[int](stages[i][1], stages[i][0])*100,
 				stages[i][0],
 				int64(scope[i][0]+scope[i][1]),
-				suffix,
 			)
-			suffix = ""
 		}
 	}
 

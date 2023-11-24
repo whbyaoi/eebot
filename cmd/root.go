@@ -25,6 +25,7 @@ func init() {
 	rootCmd.AddCommand(CollectDataCmd)
 	rootCmd.AddCommand(AddTimestampCmd)
 	rootCmd.AddCommand(UpdatePlayerSetCmd)
+	rootCmd.AddCommand(HttpCmd)
 }
 
 func Execute() error {
