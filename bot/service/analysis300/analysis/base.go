@@ -150,7 +150,7 @@ func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 
 func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, team [][4]uint64) {
 	timeToData := map[int64][6]uint64{} // 当天最晚时间戳 - [单排次数, 双排次数, 三黑次数, 四黑次数, jjl, jjl对应时间戳]
-	_, myPlays, marks, _, _ := MarkTeam(PlayerID, 0)
+	_, myPlays, marks, _, _ := MarkTeam(PlayerID)
 	for i := range myPlays {
 		thatTime := time.Unix(int64(myPlays[i].CreateTime), 0)
 		latest := time.Date(thatTime.Year(), thatTime.Month(), thatTime.Day(), 23, 59, 59, 0, time.Local).Unix()
@@ -218,7 +218,7 @@ func JJLWithTeamAnalysis(PlayerID uint64) (timeRange []string, jjl []uint64, tea
 //	hero: 英雄情况
 //	total: 总计
 func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]float64, allies map[uint64][3]float64, enermies [][3]float64, scope [][3]float64, hero map[int][3]float64, total int) {
-	matches, myPlays, marks, _, top10Allies := MarkTeam(PlayerID, span)
+	matches, myPlays, marks, _, top10Allies := MarkTeam(PlayerID)
 	total = len(matches)
 	hero = map[int][3]float64{}
 	allies = map[uint64][3]float64{}
@@ -227,7 +227,11 @@ func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]f
 	for i := range top10Allies {
 		allies[top10Allies[i][0]] = [3]float64{}
 	}
+	ddl := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local).Add(-span).Unix()
 	for i := range matches {
+		if int64(matches[i].CreateTime) < ddl{
+			continue
+		}
 		var offset float64
 		if i == 0 {
 			offset = 0
@@ -278,7 +282,7 @@ func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]f
 
 // 安定段位分析
 func StableJJLLAnalysis(PlayerID uint64) (stable int) {
-	matches, myPlays, _, _, _ := MarkTeam(PlayerID, 0)
+	matches, myPlays, _, _, _ := MarkTeam(PlayerID)
 	if len(matches) == 0 {
 		return 0
 	}
@@ -347,8 +351,9 @@ func StableJJLLAnalysis(PlayerID uint64) (stable int) {
 //		allies[*][0]: id
 //		allies[*][1]: 出现次数
 //		allies[*][2]: 胜利次数
-func MarkTeam(PlayerID uint64, span time.Duration) (matches []db.Match, myPlays []db.Player, marks []int, marksDetail [][]string, allies [][4]uint64) {
-	matches, myPlays = GetMatchAndMyPlays(PlayerID, span)
+func MarkTeam(PlayerID uint64) (matches []db.Match, myPlays []db.Player, marks []int, marksDetail [][]string, allies [][4]uint64) {
+	// 获取全部数据来计算开黑情况
+	matches, myPlays = GetMatchAndMyPlays(PlayerID, 0)
 	if len(matches) == 0 {
 		return
 	}

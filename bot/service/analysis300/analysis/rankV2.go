@@ -68,6 +68,8 @@ type HeroData struct {
 	AvgJJL                 float64
 	Score                  float64
 
+	MatchIDs []string // 参与计算的场次id
+
 	Rank Rank
 }
 
@@ -293,6 +295,7 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 			heroData.AvgMoneyConversionRate += float64(play.MakeDamageSide) * play.MakeDamagePercent / float64(play.TotalMoney) * 100
 			heroData.AvgJJL += float64(play.FV)
 			heroData.AvgUsedTime += float64(play.UsedTime)
+			heroData.MatchIDs = append(heroData.MatchIDs, play.MatchID)
 		}
 		allHeroDataSlice = append(allHeroDataSlice, heroData)
 		if heroData.Total >= ValidTimes {

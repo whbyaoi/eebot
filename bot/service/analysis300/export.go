@@ -81,7 +81,7 @@ func ExportTeamAnalysis(name string) (msg string, err error) {
 	if err != nil {
 		return
 	}
-	matches, myPlays, marks, marksDetail, allies := analysis.MarkTeam(PlayerID, 0)
+	matches, myPlays, marks, marksDetail, allies := analysis.MarkTeam(PlayerID)
 	gangUp, alliesDetail, _, _, _, _ := analysis.JJLCompositionAnalysis(PlayerID, 0)
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d\n", name, len(matches))
 	msg += fmt.Sprintln("队友情况：")
@@ -250,7 +250,7 @@ func ExportShuffleAnalysisAdvanced(name string) (msg string, err error) {
 	msg += fmt.Sprintf("洗牌分析，昵称：%s\n", name)
 	msg += fmt.Sprintf("本人有效间隔数：%d，平均间隔：%d秒，超过十分钟的间隔数：%d (占比%.1f%%)\n", total, avg, than10min, analysis.Divide(uint64(than10min), uint64(total))*100)
 
-	matches, _, _, _, allies := analysis.MarkTeam(playerID, 0)
+	matches, _, _, _, allies := analysis.MarkTeam(playerID)
 	for i, ally := range allies {
 		if i >= 7 {
 			break
@@ -280,8 +280,21 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 	}
 	heroData := heroDataSlice[PlayerID]
 	_, _, _, _, jjl, _ := analysis.JJLCompositionAnalysis(PlayerID, 24*30*time.Hour)
+	_, plays, marks, _, _ := analysis.MarkTeam(PlayerID)
+	marksMap := map[string]int{}
+	for i := range plays {
+		marksMap[plays[i].MatchID] = marks[i]
+	}
+	cnt := 0.0
+	for _, matchID := range heroData.MatchIDs {
+		if v, ok := marksMap[matchID]; ok && v == 0 {
+			cnt++
+		}
+	}
+	fmt.Printf("marksMap: %v\n", marksMap)
 	msg += fmt.Sprintf("昵称：%s(只会计算近30天战绩)\n", name)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
+	msg += fmt.Sprintf("单排率：%1.f%%\n", cnt/heroData.Total*100)
 	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
 	msg += fmt.Sprintf("净上分：%d，上分：%d，掉分：%d\n", int(jjl[db.HeroNameToID[hero]][0]+jjl[db.HeroNameToID[hero]][1]),
@@ -437,10 +450,51 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 	}
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
+	for i := range data {
+		_, plays, marks, _, _ := analysis.MarkTeam(data[i].PlayerID)
+		marksMap := map[string]int{}
+		for i := range plays {
+			marksMap[plays[i].MatchID] = marks[i]
+		}
+		cnt := 0.0
+		for _, matchID := range data[i].MatchIDs {
+			if v, ok := marksMap[matchID]; ok && v == 0 {
+				cnt++
+			}
+		}
+		msg += fmt.Sprintf("%d、%s，评分：%.1f\n均分：%d，单排率：%.1f%%\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score, int(data[i].AvgJJL), cnt/data[i].Total*100)
+	}
+	return
+}
+
+func ExportTopWithDetailAnalysis(HeroName string, fv int) (msg string, err error) {
+	if _, ok := db.HeroNameToID[HeroName]; !ok {
+		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
+	}
+
+	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
 
 	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
 	for i := range data {
 		msg += fmt.Sprintf("%d、%s，评分：%.1f\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score)
+	}
+	msg += fmt.Sprintln("英雄详情：")
+	for i, factor := range analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[HeroName]]] {
+		if factor > 0.0 {
+			msg += fmt.Sprintf("%.2f * %s，", factor, analysis.HeroTypeSlice[i])
+		}
+	}
+	msg += "\n计算详情：\n"
+	factorSlice := [][2]float64{}
+	for i, factor := range analysis.MergeImportance(analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[HeroName]]]) {
+		factorSlice = append(factorSlice, [2]float64{float64(i), factor})
+	}
+	sort.Slice(factorSlice, func(i, j int) bool {
+		return factorSlice[i][0] < factorSlice[j][0]
+	})
+	for i := range factorSlice {
+		msg += fmt.Sprintf("%s：%.2f\n", analysis.ImportanceMap[int(factorSlice[i][0])], factorSlice[i][1])
 	}
 	return
 }

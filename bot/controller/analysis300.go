@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-var NoWait = []string{"help", "菜单", "g", "top", "active", "flush", "", "test"}
+var NoWait = []string{"help", "菜单", "g", "top", "topa", "active", "flush", "", "test"}
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
@@ -141,6 +141,19 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			err = errors.New("该指令必须指定英雄")
 		} else {
 			suffix, err = analysis300.ExportTopAnalysis(name, fv)
+		}
+	case "topa":
+		var fv int
+		if len(rawMessageSlice) > 3 {
+			fv, err = strconv.Atoi(rawMessageSlice[3])
+			if err != nil {
+				fv = 0
+			}
+		}
+		if name == "" {
+			err = errors.New("该指令必须指定英雄")
+		} else {
+			suffix, err = analysis300.ExportTopWithDetailAnalysis(name, fv)
 		}
 	case "all": // 全部
 		if !HasAuth(sourceID) {
