@@ -176,7 +176,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		}
 		suffix += tmp
 	case "help", "菜单": // 帮助
-		suffix += "指令一览(详见个人空间)：\n"
+		suffix += "指令一览(任何指令需要前缀300，详见个人空间)：\n"
 		suffix += "n 玩家 --- 胜负分析\n"
 		suffix += "t 玩家 --- 开黑分析\n"
 		suffix += "s 玩家 --- 洗牌分析\n"
@@ -192,13 +192,13 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "flush 英雄名称 - 刷新月榜"
 	case "test":
 		if !HasAuth(sourceID) {
-			err = errors.New("未知指令：" + svc + "\n查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help")
+			err = errors.New("未知指令：" + svc + "\n查看可用指令请“有效”@机器人 + 300 + help\n如：@男神 300 help")
 			break
 		}
 		id, _ := collect.SearchRoleID("晚约")
 		analysis.StableJJLLAnalysis(id)
 	default:
-		suffix = "未知指令：" + svc + "\n查看可用指令请“有效”@机器机器人 + 300 + help\n如：@男神 300 help"
+		suffix = "未知指令：" + svc + "\n查看可用指令请“有效”@机器人 + 300 + help\n如：@男神 300 help"
 	}
 
 	if err == nil {

@@ -229,7 +229,7 @@ func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]f
 	}
 	ddl := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local).Add(-span).Unix()
 	for i := range matches {
-		if int64(matches[i].CreateTime) < ddl{
+		if span > 0 && int64(matches[i].CreateTime) < ddl{
 			continue
 		}
 		var offset float64
