@@ -12,7 +12,7 @@ var PlayerKeySet = "300analysis:player_set"
 
 var PlayerIDToNameKey = "300analysis:player_id_to_name"
 
-var Expiration = 24 * time.Hour
+var Expiration = 7 * 24 * time.Hour
 
 var Ctx = context.Background()
 

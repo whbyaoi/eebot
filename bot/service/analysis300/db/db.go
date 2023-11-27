@@ -29,7 +29,7 @@ func InitMysql() (err error) {
 		g.Config.GetString("analysis.mysql.user"),
 		g.Config.GetString("analysis.mysql.password"),
 		g.Config.GetString("analysis.mysql.addr"),
-		g.Config.GetString("analysis.mysql.databse"),
+		g.Config.GetString("analysis.mysql.database"),
 	)
 	SqlDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: newLogger,

@@ -1,18 +1,30 @@
+# cqhttp地址与端口
 cqhttp: 127.0.0.1:8083
+# cqhttp访问口令
 access-token: 114514
+# 环境
+# dev环境下仅接收私聊
 dev: false
+# 增量更新设置
 auto-collect: 
+  # 是否开启增量更新
   run: true
+  # 开始时间(24小时制)
   start: 0
+  # 结束时间(24小时制)
   end: 9
-  log: ./crawl.log
+  # 更新日志文件
+  log: ./crawl.log 
 
+# 数据库设置
 analysis:
+  # mysql地址、用户名、密码和数据库名字
   mysql:
     addr: localhost:3306
     user: root
     password: root@1234
-    databse: 300match
+    database: 300match
+  # redis地址、密码和数据库index
   redis:
     addr: localhost:8089
     password: root@1234
