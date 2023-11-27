@@ -42,7 +42,7 @@ var CollectDataCmd = &cobra.Command{
 		db.InitRedis()
 		db.InitMysql()
 		g.InitLog()
-		collect.Crawler.AutoIncrementalCrawl()
+		collect.Crawler.ManualIncrementalCrawl()
 	},
 }
 
