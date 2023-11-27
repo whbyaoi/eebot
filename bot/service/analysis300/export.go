@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -444,11 +445,62 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 
 func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 	if _, ok := db.HeroNameToID[HeroName]; !ok {
+		if HeroName[:3] == "jjl" {
+			var page int64 = 1
+			if len(HeroName) != 3 {
+				page, err = strconv.ParseInt(HeroName[3:], 10, 64)
+				if err != nil {
+					return "", errors.New("错误页码")
+				}
+			}
+			now := time.Now()
+			t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(-7 * 24 * 60 * 60 * time.Second)
+			matches := []db.Match{}
+			db.SqlDB.Model(db.Match{}).Where("create_time > ?", t0.Unix()).Find(&matches)
+			matchIDs := []string{}
+			for i := range matches {
+				matchIDs = append(matchIDs, matches[i].MatchID)
+			}
+			type result struct {
+				PlayerID uint64
+				FV       int
+			}
+			allPlays := map[uint64]int{}
+			step := 1000
+			for start := 0; start < len(matchIDs); start += step {
+				plays := []result{}
+				db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:start+step]).Scan(&plays)
+				for i := range plays {
+					allPlays[plays[i].PlayerID] = max(allPlays[plays[i].PlayerID], plays[i].FV)
+				}
+			}
+			plays := []result{}
+			for id, fv := range allPlays {
+				plays = append(plays, result{id, fv})
+			}
+			sort.Slice(plays, func(i, j int) bool {
+				return plays[i].FV > plays[j].FV
+			})
+			msg += "团分排行榜(只会计算近30天战绩)：\n"
+			for i := (page - 1) * 10; i < int64(len(plays)); i++ {
+				if i >= page*10 {
+					break
+				}
+
+				msg += fmt.Sprintf("%d、%s，%d\n", i+1, collect.SearchName(plays[i].PlayerID), plays[i].FV)
+			}
+			total := len(plays) / 10
+			if len(plays)%10 > 0 {
+				total++
+			}
+			msg += fmt.Sprintf("总计人数：%d\n页码：%d/%d\n", len(plays), page, total)
+			return
+		}
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
+	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数至少5次、至多50次的战绩)\n", HeroName, fv, total)
 	for i := range data {
 		_, plays, marks, _, _ := analysis.MarkTeam(data[i].PlayerID)
 		marksMap := map[string]int{}

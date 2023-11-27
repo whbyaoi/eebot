@@ -141,7 +141,8 @@ func GetMatchAndMyPlays(PlayerID uint64, span time.Duration) (matches []db.Match
 
 func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
 	if id, ok := db.HeroNameToID[HeroName]; ok {
-		start := time.Now().Unix() - ExpiryDate
+		now := time.Now()
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
 		err = db.SqlDB.Model(db.Player{}).Where("create_time > ? and hero_id = ?", start, id).Find(&players).Error
 		return
 	}
@@ -229,7 +230,7 @@ func JJLCompositionAnalysis(PlayerID uint64, span time.Duration) (gangUp [4][3]f
 	}
 	ddl := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local).Add(-span).Unix()
 	for i := range matches {
-		if span > 0 && int64(matches[i].CreateTime) < ddl{
+		if span > 0 && int64(matches[i].CreateTime) < ddl {
 			continue
 		}
 		var offset float64

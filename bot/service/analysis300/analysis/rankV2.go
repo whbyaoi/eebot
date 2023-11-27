@@ -333,7 +333,8 @@ func CalculateData(idToData map[uint64][]*db.Player, fv int, HeroID int) (heroDa
 
 func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroData) {
 	var players []db.Player
-	start := time.Now().Unix() - ExpiryDate
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
 	db.SqlDB.Model(db.Player{}).Where("create_time > ? and hero_id = ?", start, HeroID).Order("create_time desc").Find(&players)
 	idToRecord := map[uint64][]*db.Player{}
 	for i := range players {
