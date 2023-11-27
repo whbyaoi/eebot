@@ -16,6 +16,11 @@ auto-collect:
   # 更新日志文件
   log: ./crawl.log 
 
+# 是否处理完命令后推送消息到本人qq（需bot好友）
+report: false
+# 推送qq
+report-id: 666
+
 # 数据库设置
 analysis:
   # mysql地址、用户名、密码和数据库名字
@@ -29,3 +34,5 @@ analysis:
     addr: localhost:8089
     password: root@1234
     db: 0
+  # 可以使用一些特殊指令的qq
+  vip: 666
