@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -641,6 +642,9 @@ func ExportJJLWithTeamAnalysis(name string) (msg string, err error) {
 		return "", err
 	}
 	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d", PlayerID))
+	if runtime.GOOS == "windows" {
+		abs = "/" + abs
+	}
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
@@ -791,6 +795,9 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 		return "", err
 	}
 	abs, _ := filepath.Abs(fmt.Sprintf("./files/%d_pk", PlayerID))
+	if runtime.GOOS == "windows" {
+		abs = "/" + abs
+	}
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
@@ -811,7 +818,8 @@ func ExportActiveAnalysis() (msg string, err error) {
 	step := 1000
 	for start := 0; start < len(matchIDs); start += step {
 		plays := []result{}
-		db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:start+step]).Scan(&plays)
+		end := min(start+step, len(matchIDs))
+		db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:end]).Scan(&plays)
 		for i := range plays {
 			allPlays[plays[i].PlayerID] = max(allPlays[plays[i].PlayerID], plays[i].FV)
 		}
@@ -867,6 +875,9 @@ func ExportActiveAnalysis() (msg string, err error) {
 		return "", err
 	}
 	abs, _ := filepath.Abs("./files/active")
+	if runtime.GOOS == "windows" {
+		abs = "/" + abs
+	}
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
