@@ -118,16 +118,32 @@ func (c *crawler) getMatchDetail(MatchID string) (match *db.Match, err error) {
 			match.Players[j].TotalMoneySide = totalMoney1
 			match.Players[j].TotalMoneyPercent = float64(match.Players[j].TotalMoney) / float64(totalMoney1)
 			match.Players[j].MakeDamageSide = MakeDamage1
-			match.Players[j].MakeDamagePercent = float64(match.Players[j].MD[len(match.Players[j].MD)-1]) / float64(MakeDamage1)
+			if MakeDamage1 != 0 {
+				match.Players[j].MakeDamagePercent = float64(match.Players[j].MD[len(match.Players[j].MD)-1]) / float64(MakeDamage1)
+			} else {
+				match.Players[j].MakeDamagePercent = 0
+			}
 			match.Players[j].TakeDamageSide = TakeDamage1
-			match.Players[j].TakeDamagePercent = float64(match.Players[j].TD[len(match.Players[j].TD)-1]) / float64(TakeDamage1)
+			if TakeDamage1 != 0 {
+				match.Players[j].TakeDamagePercent = float64(match.Players[j].TD[len(match.Players[j].TD)-1]) / float64(TakeDamage1)
+			} else {
+				match.Players[j].TakeDamagePercent = 0
+			}
 		} else {
 			match.Players[j].TotalMoneySide = totalMoney2
 			match.Players[j].TotalMoneyPercent = float64(match.Players[j].TotalMoney) / float64(totalMoney2)
 			match.Players[j].MakeDamageSide = MakeDamage2
-			match.Players[j].MakeDamagePercent = float64(match.Players[j].MD[len(match.Players[j].MD)-1]) / float64(MakeDamage2)
+			if MakeDamage2 != 0 {
+				match.Players[j].MakeDamagePercent = float64(match.Players[j].MD[len(match.Players[j].MD)-1]) / float64(MakeDamage2)
+			} else {
+				match.Players[j].MakeDamagePercent = 0
+			}
 			match.Players[j].TakeDamageSide = TakeDamage2
-			match.Players[j].TakeDamagePercent = float64(match.Players[j].TD[len(match.Players[j].TD)-1]) / float64(TakeDamage2)
+			if TakeDamage2 != 0 {
+				match.Players[j].TakeDamagePercent = float64(match.Players[j].TD[len(match.Players[j].TD)-1]) / float64(TakeDamage2)
+			} else {
+				match.Players[j].TakeDamagePercent = 0
+			}
 		}
 	}
 
