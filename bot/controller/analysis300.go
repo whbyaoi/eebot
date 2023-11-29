@@ -176,7 +176,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		}
 		suffix += tmp
 	case "help", "菜单": // 帮助
-		suffix += "指令一览(任何指令需要前缀300，详见个人空间)：\n"
+		suffix += "指令一览(任何指令需要前缀300，详见个人空间或github项目首页)：\n"
 		suffix += "n 玩家 --- 胜负分析\n"
 		suffix += "t 玩家 --- 开黑分析\n"
 		suffix += "s 玩家 --- 洗牌分析\n"
