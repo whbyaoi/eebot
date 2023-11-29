@@ -363,7 +363,7 @@ func ExportGlobalHeroAnalysis(HeroName string, fv int) (msg string, err error) {
 	if err != nil {
 		return
 	}
-	MatchIDToPlayers := map[string][]db.Player{}
+	MatchIDToPlayers := map[string][]db.PlayerPartition{}
 	for i := range ps {
 		MatchIDToPlayers[ps[i].MatchID] = append(MatchIDToPlayers[ps[i].MatchID], ps[i])
 	}

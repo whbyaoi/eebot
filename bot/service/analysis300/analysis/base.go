@@ -139,11 +139,19 @@ func GetMatchAndMyPlays(PlayerID uint64, span time.Duration) (matches []db.Match
 	return
 }
 
-func GlobalHeroAnalysis(HeroName string) (players []db.Player, err error) {
+func GlobalHeroAnalysis(HeroName string) (players []db.PlayerPartition, err error) {
 	if id, ok := db.HeroNameToID[HeroName]; ok {
 		now := time.Now()
 		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
-		err = db.SqlDB.Model(db.Player{}).Where("id in (select id from players where create_time > ? and hero_id = ?)", start, id).Find(&players).Error
+		if db.HasPartition() {
+			db.SqlDB.Model(db.PlayerPartition{}).Where("create_time > ? and hero_id = ?", start, id).Find(&players)
+		} else {
+			var tmp []db.Player
+			db.SqlDB.Model(db.Player{}).Where("id in (select id from players where create_time > ? and hero_id = ?)", start, id).Find(&tmp)
+			for i := range tmp {
+				players = append(players, db.ToPartition(tmp[i]))
+			}
+		}
 		return
 	}
 	return nil, fmt.Errorf("不存在 %s 该英雄", HeroName)
