@@ -105,17 +105,17 @@ func (PlayerPartition) TableName() string {
 	return "players_partition"
 }
 
-type MatchPartition struct {
-	ID         uint64            `gorm:"primaryKey"`
-	MatchID    string            `json:"MTID"`                                                   // 比赛id
-	MatchIDInt uint64            `json:"MTIDInt"`                                                // int格式比赛id，不知道为什么和上面的不一样
-	MID        uint64            `json:"MID"`                                                    // 比赛类型
-	UsedTime   uint64            `json:"UsedTime"`                                               // 所用时间
-	Players    []PlayerPartition `json:"Players" gorm:"foreignKey:match_id;references:match_id"` // 玩家
-	CreateTime uint64            `json:"CreateTime"`                                             // 游戏结束时的时间戳
-	KillTrees  string            `json:"KillTrees" gorm:"-"`                                     // 击杀树
-}
+// type MatchPartition struct {
+// 	ID         uint64            `gorm:"primaryKey"`
+// 	MatchID    string            `json:"MTID"`                                                   // 比赛id
+// 	MatchIDInt uint64            `json:"MTIDInt"`                                                // int格式比赛id，不知道为什么和上面的不一样
+// 	MID        uint64            `json:"MID"`                                                    // 比赛类型
+// 	UsedTime   uint64            `json:"UsedTime"`                                               // 所用时间
+// 	Players    []PlayerPartition `json:"Players" gorm:"foreignKey:match_id;references:match_id"` // 玩家
+// 	CreateTime uint64            `json:"CreateTime"`                                             // 游戏结束时的时间戳
+// 	KillTrees  string            `json:"KillTrees" gorm:"-"`                                     // 击杀树
+// }
 
-func (MatchPartition) TableName() string {
-	return "matches"
-}
+// func (MatchPartition) TableName() string {
+// 	return "matches"
+// }

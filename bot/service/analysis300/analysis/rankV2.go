@@ -254,7 +254,7 @@ func GetRankFromPlayers(HeroID int, fv int, PlayerID []uint64) (players map[uint
 	return players, len(slice)
 }
 
-func CalculateData(idToData map[uint64][]*db.PlayerPartition, fv int, HeroID int) (heroDataSlice []*HeroData, allHeroDataSlice []*HeroData) {
+func CalculateData(idToData map[uint64][]db.PlayerPartition, fv int, HeroID int) (heroDataSlice []*HeroData, allHeroDataSlice []*HeroData) {
 	for playerID, plays := range idToData {
 		heroData := &HeroData{
 			PlayerID:    playerID,
@@ -338,17 +338,23 @@ func CalculateData(idToData map[uint64][]*db.PlayerPartition, fv int, HeroID int
 func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroData) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
-	// var players []db.Player
-	// idToRecord := map[uint64][]*db.Player{}
-	// db.SqlDB.Model(db.Player{}).Where("id in (select id from players where create_time > ? and hero_id = ?)", start, HeroID).Order("create_time desc").Find(&players)
-	var players []db.PlayerPartition
-	idToRecord := map[uint64][]*db.PlayerPartition{}
-	db.SqlDB.Model(db.PlayerPartition{}).Where("create_time > ? and hero_id = ?", start, HeroID).Order("create_time desc").Find(&players)
-	for i := range players {
-		idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], &players[i])
+	idToRecord := map[uint64][]db.PlayerPartition{}
+	if db.HasPartition(){
+		var players []db.PlayerPartition
+		db.SqlDB.Model(db.PlayerPartition{}).Where("create_time > ? and hero_id = ?", start, HeroID).Order("create_time desc").Find(&players)
+		for i := range players {
+			idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], players[i])
+		}
+		clear(players)
+	} else{
+		var players []db.Player
+		db.SqlDB.Model(db.Player{}).Where("id in (select id from players where create_time > ? and hero_id = ?)", start, HeroID).Order("create_time desc").Find(&players)
+		for i := range players {
+			idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], db.ToPartition(players[i]))
+		}
+		clear(players)
 	}
 	heroDataSlice, allHeroDataSlice := CalculateData(idToRecord, fv, HeroID)
-	clear(players)
 	clear(idToRecord)
 	// 排序
 	sortedData := map[string][]*HeroData{}
