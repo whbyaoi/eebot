@@ -214,6 +214,18 @@ func (c *crawler) CrawlAllAndSave(PlayerID uint64, source int) (ids []interface{
 			g.CrawlLogger.Errorf("保存玩家 %s(%d) 战绩时错误：%s", name, PlayerID, err.Error())
 			continue
 		}
+		// 保存分区战绩
+		partitionPlayers := []db.PlayerPartition{}
+		for i := range saveMatches {
+			for _, play := range saveMatches[i].Players {
+				partitionPlayers = append(partitionPlayers, db.ToPartition(play))
+			}
+		}
+		err = db.SqlDB.Create(&partitionPlayers).Error
+		if err != nil {
+			g.CrawlLogger.Errorf("保存玩家 %s(%d) 分区战绩时错误：%s", name, PlayerID, err.Error())
+			continue
+		}
 		total += len(saveMatches)
 		for i := range saveMatches {
 			for j := range saveMatches[i].Players {
