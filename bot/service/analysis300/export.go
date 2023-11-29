@@ -345,20 +345,11 @@ func ExportLikeAnalysis(name string) (msg string, err error) {
 		if _, ok := heroData[PlayerID]; !ok {
 			return "", errors.New("异常错误")
 		}
-		players := []db.Player{}
-		start := time.Now().Unix() - analysis.ExpiryDate
-		db.SqlDB.Model(db.Player{}).Where("player_id = ? and hero_id = ? and create_time > ?", PlayerID, rs[i][0], start).Find(&players)
-		win := 0
-		for j := range players {
-			if players[j].Result == 1 || players[j].Result == 3 {
-				win++
-			}
-		}
 		msg += fmt.Sprintf("%d、英雄：%s，场次：%d，胜率：%.1f%%，净上分：%d，评分：%.1f(%.1f%%)\n",
 			i+1,
 			db.HeroIDToName[int(rs[i][0])],
-			len(players),
-			float64(win)/float64(len(players))*100,
+			int(heroData[PlayerID].ActualTotal),
+			heroData[PlayerID].ActualWin/heroData[PlayerID].ActualTotal*100,
 			int(heroDetail[int(rs[i][0])][1]+heroDetail[int(rs[i][0])][0]),
 			heroData[PlayerID].Score,
 			heroData[PlayerID].Rank.Score,
