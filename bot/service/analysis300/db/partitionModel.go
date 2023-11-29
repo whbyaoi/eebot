@@ -65,7 +65,6 @@ type PlayerPartition struct {
 
 func ToPartition(p Player) PlayerPartition {
 	return PlayerPartition{
-		ID:                   p.ID,
 		MatchID:              p.MatchID,
 		UsedTime:             p.UsedTime,
 		CreateTime:           p.CreateTime,
