@@ -461,7 +461,8 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 			step := 1000
 			for start := 0; start < len(matchIDs); start += step {
 				plays := []result{}
-				db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:start+step]).Scan(&plays)
+				end := min(start+step, len(matchIDs))
+				db.SqlDB.Raw("select player_id, max(fv) fv from players where match_id in ? group by player_id", matchIDs[start:end]).Scan(&plays)
 				for i := range plays {
 					allPlays[plays[i].PlayerID] = max(allPlays[plays[i].PlayerID], plays[i].FV)
 				}
