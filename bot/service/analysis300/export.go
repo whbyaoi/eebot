@@ -428,12 +428,13 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 
 	msg += fmt.Sprintf("英雄：%s，出现次数：%d(最近30天)\n", HeroName, all)
 	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", analysis.Divide(uint64(win), uint64(all))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%% (占比 / 场次 / 胜率，下同)\n", "1000-1500", analysis.Divide(uint64(range0), uint64(all))*100, range0, analysis.Divide(uint64(win0), uint64(range0))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1500-1700", analysis.Divide(uint64(range1), uint64(all))*100, range1, analysis.Divide(uint64(win1), uint64(range1))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1700-1800", analysis.Divide(uint64(range2), uint64(all))*100, range2, analysis.Divide(uint64(win2), uint64(range2))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1800-1900", analysis.Divide(uint64(range3), uint64(all))*100, range3, analysis.Divide(uint64(win3), uint64(range3))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "1900-2000", analysis.Divide(uint64(range4), uint64(all))*100, range4, analysis.Divide(uint64(win4), uint64(range4))*100)
-	msg += fmt.Sprintf("分段%s(%.1f%%)：%d, %.1f%%\n", "2000-2500", analysis.Divide(uint64(range5), uint64(all))*100, range5, analysis.Divide(uint64(win5), uint64(range5))*100)
+	msg += "(使用者分段 / 占比 / 场次 / 胜率)\n"
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%% \n", "1000-1500", analysis.Divide(uint64(range0), uint64(all))*100, range0, analysis.Divide(uint64(win0), uint64(range0))*100)
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1500-1700", analysis.Divide(uint64(range1), uint64(all))*100, range1, analysis.Divide(uint64(win1), uint64(range1))*100)
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1700-1800", analysis.Divide(uint64(range2), uint64(all))*100, range2, analysis.Divide(uint64(win2), uint64(range2))*100)
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1800-1900", analysis.Divide(uint64(range3), uint64(all))*100, range3, analysis.Divide(uint64(win3), uint64(range3))*100)
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1900-2000", analysis.Divide(uint64(range4), uint64(all))*100, range4, analysis.Divide(uint64(win4), uint64(range4))*100)
+	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "2000-2500", analysis.Divide(uint64(range5), uint64(all))*100, range5, analysis.Divide(uint64(win5), uint64(range5))*100)
 	return
 }
 
@@ -477,7 +478,7 @@ func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
 	}
 	msg += fmt.Sprintf("英雄：%s，出现次数：%d(最近30天)\n", HeroName, len(matchIDs))
 	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", analysis.Divide(uint64(win), uint64(len(matchIDs)))*100)
-	msg += "分段 / 占比 / 胜率 / 场次"
+	msg += "对局分段 / 占比 / 胜率 / 场次"
 	for i := range stages {
 		if stages[i][1] > 0 {
 			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], float64(stages[i][1])/float64(len(matchIDs))*100, float64(stages[i][0])/float64(stages[i][1])*100, stages[i][1])
