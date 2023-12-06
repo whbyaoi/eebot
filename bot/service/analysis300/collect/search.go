@@ -107,7 +107,7 @@ A:
 func SearchRoleID(name string) (RoleID uint64, err error) {
 	defer func() {
 		if err != nil && err.Error() == "error interface result" {
-			err = fmt.Errorf("不存在 %s 角色", name)
+			err = fmt.Errorf("不存在 %s 玩家", name)
 		}
 	}()
 	if strings.HasPrefix(name, MaskPrefix) {
