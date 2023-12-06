@@ -8,6 +8,7 @@ import (
 	"eebot/g"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		if r := recover(); r != nil {
 			service.Reply("未知错误", prefix, targetID)
 			err = fmt.Errorf("%+v", r)
+			debug.PrintStack()
 		}
 	}()
 

@@ -457,21 +457,22 @@ func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
 		}
 		matchIDs = append(matchIDs, id)
 	}
-	matches := []db.Match{}
-	err = db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs).Find(&matches).Error
-	if err != nil {
-		return
-	}
 	stages := make([][2]int, len(analysis.DefaultJJLCategoryKeys))
-	for i := range matches {
-		avg := 0
-		for j := range matches[i].Players {
-			avg += matches[i].Players[j].FV
-		}
-		avg /= 14
-		stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][1] += 1
-		if MatchIDToPlayers[matches[i].MatchID][0].Result == 1 || MatchIDToPlayers[matches[i].MatchID][0].Result == 3 {
-			stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][0] += 1
+	step := 1000
+	matches := []db.Match{}
+	for start := 0; start < len(matchIDs); start += step {
+		end := min(start+step, len(matchIDs))
+		db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs[start:end]).Find(&matches)
+		for i := range matches {
+			avg := 0
+			for j := range matches[i].Players {
+				avg += matches[i].Players[j].FV
+			}
+			avg /= 14
+			stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][1] += 1
+			if MatchIDToPlayers[matches[i].MatchID][0].Result == 1 || MatchIDToPlayers[matches[i].MatchID][0].Result == 3 {
+				stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][0] += 1
+			}
 		}
 	}
 	msg += fmt.Sprintf("英雄：%s，出现次数：%d(最近30天)\n", HeroName, len(matchIDs))
