@@ -38,3 +38,25 @@ func JJLCategoriesByInterval(interval int) (categories JJLCategoryKey) {
 	}
 	return
 }
+
+type AppraiseCategoryKey []string
+
+var DefaultAppraiseCategoryKeys = AppraiseCategoryKey{"sss", "ss", "s", "a", "b", "c", "d"}
+
+func (ac AppraiseCategoryKey) Appraise(level float64) string {
+	if level < 25 {
+		return "d"
+	} else if level >= 25 && level < 50 {
+		return "c"
+	} else if level >= 50 && level < 75 {
+		return "b"
+	} else if level >= 75 && level < 92 {
+		return "a"
+	} else if level >= 92 && level < 97 {
+		return "s"
+	} else if level >= 97 && level < 99 {
+		return "ss"
+	} else {
+		return "sss"
+	}
+}

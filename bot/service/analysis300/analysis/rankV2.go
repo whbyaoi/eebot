@@ -233,7 +233,7 @@ func (hd *Rank) set(attr string, value float64) {
 
 // GetRankFromTop 返回降序评分前top
 func GetRankFromTop(HeroID int, fv int, top int) ([]*HeroData, int) {
-	slice, _, sorted := getRank(HeroID, fv)
+	slice, _, sorted := GetRank(HeroID, fv)
 	if len(sorted["Score"]) < top {
 		slices.Reverse[[]*HeroData](sorted["Score"])
 		return sorted["Score"], len(slice)
@@ -244,7 +244,7 @@ func GetRankFromTop(HeroID int, fv int, top int) ([]*HeroData, int) {
 }
 
 func GetRankFromPlayers(HeroID int, fv int, PlayerID []uint64) (players map[uint64]*HeroData, n int) {
-	slice, allSlice, _ := getRank(HeroID, fv)
+	slice, allSlice, _ := GetRank(HeroID, fv)
 	players = map[uint64]*HeroData{}
 	for i := range allSlice {
 		if slices.Contains(PlayerID, allSlice[i].PlayerID) {
@@ -254,6 +254,10 @@ func GetRankFromPlayers(HeroID int, fv int, PlayerID []uint64) (players map[uint
 	return players, len(slice)
 }
 
+// CalculateData
+//
+//	heroDataSlice: 合法数据
+//	allHeroDataSlice: 所有数据
 func CalculateData(idToData map[uint64][]db.PlayerPartition, fv int, HeroID int) (heroDataSlice []*HeroData, allHeroDataSlice []*HeroData) {
 	for playerID, plays := range idToData {
 		heroData := &HeroData{
@@ -335,18 +339,26 @@ func CalculateData(idToData map[uint64][]db.PlayerPartition, fv int, HeroID int)
 	return
 }
 
-func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroData) {
+func GetRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroData) {
+	idToRecord := QueryHeroData(HeroID)
+	heroDataSlice, allHeroDataSlice := CalculateData(idToRecord, fv, HeroID)
+	clear(idToRecord)
+	sortedData := SortRank(heroDataSlice)
+	return heroDataSlice, allHeroDataSlice, sortedData
+}
+
+func QueryHeroData(HeroID int) map[uint64][]db.PlayerPartition {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Unix() - ExpiryDate
 	idToRecord := map[uint64][]db.PlayerPartition{}
-	if db.HasPartition(){
+	if db.HasPartition() {
 		var players []db.PlayerPartition
 		db.SqlDB.Model(db.PlayerPartition{}).Where("create_time > ? and hero_id = ?", start, HeroID).Order("create_time desc").Find(&players)
 		for i := range players {
 			idToRecord[players[i].PlayerID] = append(idToRecord[players[i].PlayerID], players[i])
 		}
 		clear(players)
-	} else{
+	} else {
 		var players []db.Player
 		db.SqlDB.Model(db.Player{}).Where("id in (select id from players where create_time > ? and hero_id = ?)", start, HeroID).Order("create_time desc").Find(&players)
 		for i := range players {
@@ -354,10 +366,11 @@ func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroDa
 		}
 		clear(players)
 	}
-	heroDataSlice, allHeroDataSlice := CalculateData(idToRecord, fv, HeroID)
-	clear(idToRecord)
-	// 排序
-	sortedData := map[string][]*HeroData{}
+	return idToRecord
+}
+
+func SortRank(heroDataSlice []*HeroData) (sortedData map[string][]*HeroData) {
+	sortedData = map[string][]*HeroData{}
 	for _, attr := range attrs[:len(attrs)-1] {
 		sort.Slice(heroDataSlice, func(i, j int) bool {
 			return heroDataSlice[i].get(attr) < heroDataSlice[j].get(attr)
@@ -367,7 +380,7 @@ func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroDa
 		sortedData[attr] = tmp
 	}
 	// 计算权重
-	heroWeight := MergeImportance(HeroFactor[db.HeroIDToName[HeroID]])
+	heroWeight := MergeImportance(HeroFactor[db.HeroIDToName[heroDataSlice[0].HeroID]])
 	for attr, s := range sortedData {
 		for rank, data := range s {
 			data.Score += float64(rank) / float64(len(s)-1) * heroWeight[weightTran[attr]] * 100
@@ -387,5 +400,22 @@ func getRank(HeroID int, fv int) ([]*HeroData, []*HeroData, map[string][]*HeroDa
 	for rank, heroData := range sortedData[attr] {
 		heroData.Rank.set(attr, float64(rank)/float64(len(sortedData[attr])-1)*100)
 	}
-	return heroDataSlice, allHeroDataSlice, sortedData
+	return
+}
+
+// GetAppraise 获取单条战绩的评价
+func GetAppraise(play db.Player) (appraise string) {
+	idToRecord := QueryHeroData(play.HeroID)
+	for i := 0; i < 25; i++ {
+		idToRecord[0] = append(idToRecord[0], db.ToPartition(play))
+	}
+	heroDataSlice, _ := CalculateData(idToRecord, 0, play.HeroID)
+	clear(idToRecord)
+	SortRank(heroDataSlice)
+	for i := range heroDataSlice{
+		if heroDataSlice[i].PlayerID==0{
+			return DefaultAppraiseCategoryKeys.Appraise(heroDataSlice[i].Rank.Score)
+		}
+	}
+	return "?"
 }

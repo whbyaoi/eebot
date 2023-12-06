@@ -260,10 +260,15 @@ func (c *crawler) AutoIncrementalCrawl() {
 			}
 			g.CrawlLogger.Infof("增量更新停止: 当前时间%s不在更新时间段%s-%s内，等待%v", now.Format(time.TimeOnly), start.Format(time.TimeOnly), end.Format(time.TimeOnly), wait)
 			time.Sleep(wait)
-			g.CrawlLogger.Infof("增量更新开始")
 		}
+		g.CrawlLogger.Infof("增量更新开始")
 		playerID, err := db.RDB.SPop(Ctx, PlayerKeySet).Result()
 		if err != nil {
+			if err.Error() == "redis: nil" {
+				g.CrawlLogger.Infof("增量更新set重置")
+				c.UpdatePlayerSet()
+				continue
+			}
 			g.CrawlLogger.Error("增量更新错误: redis set pop, ", err.Error())
 			break
 		}
@@ -306,14 +311,9 @@ func (c *crawler) ManualIncrementalCrawl() {
 }
 
 func (c *crawler) UpdatePlayerSet() {
-	type result struct {
-		PlayerID string
-	}
-	var results []result
-	db.SqlDB.Model(db.Player{}).Distinct("player_id").Select("player_id").Scan(&results)
 	ids := []interface{}{}
-	for i := range results {
-		ids = append(ids, results[i].PlayerID)
-	}
+	now := time.Now()
+	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(-7 * 24 * 60 * 60 * time.Second)
+	db.SqlDB.Model(db.Player{}).Where("create_time > ?", t0.Unix()).Pluck("player_id", &ids)
 	db.RDB.SAdd(Ctx, PlayerKeySet, ids...).Result()
 }

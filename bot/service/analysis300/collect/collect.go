@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"eebot/bot/service/analysis300/db"
 	"eebot/g"
 	"time"
 )
@@ -22,10 +23,16 @@ func CrawlPlayerByName(name string) (err error) {
 		g.Logger.Info("error: search player id, ", err.Error())
 		return err
 	}
-	Crawler.CrawlAllAndSave(PlayerID, 0)
+	ids := Crawler.CrawlAllAndSave(PlayerID, 0)
+	if len(ids) > 0 {
+		db.RDB.SAdd(Ctx, PlayerKeySet, ids...).Result()
+	}
 	return
 }
 
 func CrawlPlayerByID(PlayerID uint64) {
-	Crawler.CrawlAllAndSave(PlayerID, 0)
+	ids := Crawler.CrawlAllAndSave(PlayerID, 0)
+	if len(ids) > 0 {
+		db.RDB.SAdd(Ctx, PlayerKeySet, ids...).Result()
+	}
 }
