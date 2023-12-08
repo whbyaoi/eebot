@@ -11,7 +11,7 @@ var Logger = logrus.New()
 var CrawlLogger = logrus.New()
 
 func InitLog() {
-	file, err := os.OpenFile(Config.GetString("auto-collect.log"), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+	file, err := os.OpenFile(Config.GetString("auto-collect.log"), os.O_RDWR|os.O_APPEND|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		Logger.Info("创建crawl日志文件失败")
 	}
