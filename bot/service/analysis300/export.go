@@ -375,7 +375,6 @@ func ExportFindPlayer(args string, page int) (msg string, err error) {
 		return "", fmt.Errorf("不存在 %s 英雄", argArr[0])
 	}
 	argArr[0] = fmt.Sprint(db.HeroNameToID[argArr[0]])
-	fmt.Printf("argArr: %v\n", argArr)
 	keyArr := []string{"hero_id", "kill_player", "death", "assist", "kill_unit", "total_money", "fv"}
 	if db.HasPartition() {
 		plays := []db.PlayerPartition{}
@@ -400,7 +399,27 @@ func ExportFindPlayer(args string, page int) (msg string, err error) {
 		}
 		msg += fmt.Sprintf("页码：%d/%d", page, total)
 	} else {
-		return "未找到分区表，暂不支持该指令", nil
+		plays := []db.Player{}
+		tmp := db.SqlDB.Model(db.Player{})
+		for i := range argArr {
+			if argArr[i] != "" {
+				tmp = tmp.Where(fmt.Sprintf("%s = %v", keyArr[i], argArr[i]))
+			}
+		}
+		tmp.Order("create_time desc").Find(&plays)
+		msg += fmt.Sprintf("%d条匹配的游戏记录：\n", len(plays))
+		msg += "名称 k/d/a/补 钱 时间\n"
+		if len(plays) != 0 && (page-1)*10 > len(plays)-1 {
+			return "页码超出范围", nil
+		}
+		for i := range plays[(page-1)*10 : min(page*10, len(plays))] {
+			msg += fmt.Sprintf("%s %d/%d/%d/%d %s\n", collect.SearchName(plays[i].PlayerID), plays[i].KillPlayer, plays[i].Death, plays[i].Assist, plays[i].KillUnit, time.Unix(int64(plays[i].CreateTime), 0).Format(time.DateTime))
+		}
+		total := len(plays) / 10
+		if len(plays)%10 > 0 {
+			total++
+		}
+		msg += fmt.Sprintf("页码：%d/%d", page, total)
 	}
 	return msg, err
 }
