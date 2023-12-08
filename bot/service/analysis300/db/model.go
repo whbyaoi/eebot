@@ -2,18 +2,18 @@ package db
 
 type Player struct {
 	ID      uint64 `gorm:"primaryKey"`
-	MatchID string
+	MatchID string `gorm:"index"`
 
 	UsedTime             uint64  // 战绩所用时间
-	CreateTime           uint64  // 游戏结束时的时间戳
-	PlayerID             uint64  `json:"PlayerID"`    // 玩家id
-	Name                 string  `json:"RN"`          // 名称
-	AM                   []int   `json:"AM" gorm:"-"` // AwardMoney 8个一组，一组代表一分钟金钱的变化。其中 0 到 7 分别代表： 0-自然金钱增长，1-补刀，8-总
+	CreateTime           uint64  `gorm:"index:create_time_and_hero_id,priority:1"` // 游戏结束时的时间戳
+	PlayerID             uint64  `json:"PlayerID" gorm:"index"`                    // 玩家id
+	Name                 string  `json:"RN"`                                       // 名称
+	AM                   []int   `json:"AM" gorm:"-"`                              // AwardMoney 8个一组，一组代表一分钟金钱的变化。其中 0 到 7 分别代表： 0-自然金钱增长，1-补刀，8-总
 	Ep                   []int   `json:"Ep" gorm:"-"`
 	KM                   []int   `json:"KM" gorm:"-"`
 	MD                   []int   `json:"MD" gorm:"-"`
 	SummonerLevel        int     `json:"SummonerLevel" gorm:"-"`
-	HeroID               int     `json:"HeroID"`
+	HeroID               int     `json:"HeroID" gorm:"index:create_time_and_hero_id,priority:2"`
 	HeroLv               int     `json:"HeroLv"`
 	Side                 int     `json:"Side"`
 	Result               int     `json:"Result"` // 1-win, 2-lose
@@ -65,10 +65,10 @@ type Player struct {
 
 type Match struct {
 	ID         uint64   `gorm:"primaryKey"`
-	MatchID    string   `json:"MTID"`                                                   // 比赛id
+	MatchID    string   `json:"MTID" gorm:"index"`                                      // 比赛id
 	MatchIDInt uint64   `json:"MTIDInt"`                                                // int格式比赛id，不知道为什么和上面的不一样
 	MID        uint64   `json:"MID"`                                                    // 比赛类型
-	UsedTime   uint64   `json:"UsedTime"`                                               // 所用时间
+	UsedTime   uint64   `json:"UsedTime" gorm:"index"`                                  // 所用时间
 	Players    []Player `json:"Players" gorm:"foreignKey:match_id;references:match_id"` // 玩家
 	CreateTime uint64   `json:"CreateTime"`                                             // 游戏结束时的时间戳
 	KillTrees  string   `json:"KillTrees" gorm:"-"`                                     // 击杀树
@@ -571,7 +571,7 @@ var HeroNameToID = map[string]int{
 	"爱德华":       203,
 	"梦梦":        149,
 	"剪刀仔":       250,
-	"伍六七":       259,
+	"伍六七":       250,
 	"伍六七（刺客）":   259,
 	"王也":        280,
 	"大蛇丸":       65,

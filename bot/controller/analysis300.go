@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-var NoWait = []string{"help", "菜单", "g", "g1", "g2", "top", "topa", "active", "flush", "", "test"}
+var NoWait = []string{"help", "菜单", "g", "g1", "f", "g2", "top", "topa", "active", "flush", "", "test"}
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
@@ -101,6 +101,15 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			suffix, err = analysis300.ExportAssignHeroAnalysisAdvancedV2(name, assgin, fv)
 		}
+	case "f":
+		var page int64 = 1
+		if len(rawMessageSlice) > 3 {
+			page, err = strconv.ParseInt(rawMessageSlice[3], 10, 64)
+				if err != nil || page <= 0 {
+					err = errors.New("错误页码")
+				}
+		}
+		suffix, err = analysis300.ExportFindPlayer(name, int(page))
 	case "g", "g1": // 全局英雄
 		if name == "" {
 			err = errors.New("该指令必须指定英雄")
@@ -194,6 +203,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "r 玩家 [可选]英雄名称 - 近10场jjc数据\n"
 		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
+		suffix += "f 英雄/k/d/a/补刀/经济/竞技力 - 战绩找人，其中英雄/k/d/a为必填，其余选填可空\n"
 		suffix += "g 英雄名称 - 全局英雄分析(使用者各分段的出场及胜率情况)\n"
 		suffix += "g2 英雄名称 - 全局英雄分析(场均各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
