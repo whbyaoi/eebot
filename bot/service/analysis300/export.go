@@ -497,51 +497,24 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 }
 
 func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
-	ps, err := analysis.GlobalHeroAnalysis(HeroName)
+	stages, timestamp, err := analysis.GetHeroWinRate(db.HeroNameToID[HeroName])
 	if err != nil {
-		return
+		return "", err
 	}
-	MatchIDToPlayers := map[string][]db.PlayerPartition{}
-	for i := range ps {
-		MatchIDToPlayers[ps[i].MatchID] = append(MatchIDToPlayers[ps[i].MatchID], ps[i])
+	total_win, total := 0.0, 0.0
+	for i := range stages {
+		total_win += stages[i][0]
+		total += stages[i][1]
 	}
-	matchIDs := []string{}
-	win := 0
-	for id, players := range MatchIDToPlayers {
-		if len(players) >= 2 {
-			continue
-		}
-		if players[0].Result == 1 || players[0].Result == 3 {
-			win++
-		}
-		matchIDs = append(matchIDs, id)
-	}
-	stages := make([][2]int, len(analysis.DefaultJJLCategoryKeys))
-	step := 1000
-	matches := []db.Match{}
-	for start := 0; start < len(matchIDs); start += step {
-		end := min(start+step, len(matchIDs))
-		db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs[start:end]).Find(&matches)
-		for i := range matches {
-			avg := 0
-			for j := range matches[i].Players {
-				avg += matches[i].Players[j].FV
-			}
-			avg /= 14
-			stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][1] += 1
-			if MatchIDToPlayers[matches[i].MatchID][0].Result == 1 || MatchIDToPlayers[matches[i].MatchID][0].Result == 3 {
-				stages[analysis.DefaultJJLCategoryKeys.Index(float64(avg))][0] += 1
-			}
-		}
-	}
-	msg += fmt.Sprintf("英雄：%s，出现次数：%d(最近30天)\n", HeroName, len(matchIDs))
-	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", analysis.Divide(uint64(win), uint64(len(matchIDs)))*100)
-	msg += "对局分段 / 占比 / 胜率 / 场次"
+	msg += fmt.Sprintf("英雄：%s，单方面出现场次：%d(最近30天)\n", HeroName, int(total))
+	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", total_win/total*100)
+	msg += "对局分段 / 占比 / 胜率 / 场次\n"
 	for i := range stages {
 		if stages[i][1] > 0 {
-			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], float64(stages[i][1])/float64(len(matchIDs))*100, float64(stages[i][0])/float64(stages[i][1])*100, stages[i][1])
+			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], stages[i][1]/total*100, stages[i][0]/stages[i][1]*100, int(stages[i][1]))
 		}
 	}
+	msg += "缓存时间：" + time.Unix(int64(timestamp), 0).Format(time.DateTime)
 	return
 }
 
@@ -598,8 +571,8 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 			}
 			msg += fmt.Sprintf("总计人数：%d\n页码：%d/%d\n", len(plays), page, total)
 			return
-		} else if HeroName[:4] == "hero"{
-			
+		} else if HeroName[:4] == "hero" {
+
 		}
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}

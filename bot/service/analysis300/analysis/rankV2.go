@@ -1,10 +1,13 @@
 package analysis
 
 import (
+	"context"
 	"eebot/bot/service/analysis300/db"
 	"slices"
 	"sort"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 var ValidTimes = 5.0
@@ -409,20 +412,116 @@ func GetAppraise(play db.Player) (appraise string) {
 	for i := 0; i < 26; i++ {
 		idToRecord[0] = append(idToRecord[0], db.ToPartition(play))
 	}
-	for i := range idToRecord[0][:14]{
-		if idToRecord[0][14].Result==1 || idToRecord[0][14].Result==3{
+	for i := range idToRecord[0][:14] {
+		if idToRecord[0][14].Result == 1 || idToRecord[0][14].Result == 3 {
 			idToRecord[0][i].Result = 2
-		} else{
+		} else {
 			idToRecord[0][i].Result = 1
 		}
 	}
 	heroDataSlice, _ := CalculateData(idToRecord, 0, play.HeroID)
 	clear(idToRecord)
 	SortRank(heroDataSlice)
-	for i := range heroDataSlice{
-		if heroDataSlice[i].PlayerID==0{
+	for i := range heroDataSlice {
+		if heroDataSlice[i].PlayerID == 0 {
 			return DefaultAppraiseCategoryKeys.Appraise(heroDataSlice[i].Rank.Score)
 		}
 	}
 	return "?"
+}
+
+var HeroWinRateKeyPrefix = "hero_win_rate:"
+var HeroPlayCountKeyPrefix = "hero_play_count:"
+var HeroWinCountKeyPrefix = "hero_win_count:"
+var HeroDataTimestamp = "hero_data_timestamp:"
+
+func UpdateHeroWinRate(heroID int) (err error) {
+	ps, err := GlobalHeroAnalysis(db.HeroIDToName[heroID])
+	if err != nil {
+		return
+	}
+	MatchIDToPlayers := map[string][]db.PlayerPartition{}
+	for i := range ps {
+		MatchIDToPlayers[ps[i].MatchID] = append(MatchIDToPlayers[ps[i].MatchID], ps[i])
+	}
+	matchIDs := []string{}
+	win := 0
+	for id, players := range MatchIDToPlayers {
+		if len(players) >= 2 {
+			continue
+		}
+		if players[0].Result == 1 || players[0].Result == 3 {
+			win++
+		}
+		matchIDs = append(matchIDs, id)
+	}
+	stages := make([][2]int, len(DefaultJJLCategoryKeys))
+	step := 1000
+	matches := []db.Match{}
+	for start := 0; start < len(matchIDs); start += step {
+		end := min(start+step, len(matchIDs))
+		db.SqlDB.Model(db.Match{}).Preload("Players").Where("match_id in ?", matchIDs[start:end]).Find(&matches)
+		for i := range matches {
+			avg := 0
+			for j := range matches[i].Players {
+				avg += matches[i].Players[j].FV
+			}
+			avg /= 14
+			stages[DefaultJJLCategoryKeys.Index(float64(avg))][1] += 1
+			if MatchIDToPlayers[matches[i].MatchID][0].Result == 1 || MatchIDToPlayers[matches[i].MatchID][0].Result == 3 {
+				stages[DefaultJJLCategoryKeys.Index(float64(avg))][0] += 1
+			}
+		}
+	}
+	for i := range stages {
+		var winRate float64
+		if float64(stages[i][1]) != 0 {
+			winRate = float64(stages[i][0]) / float64(stages[i][1])
+		}
+		err = db.RDB.ZAdd(context.Background(), HeroWinRateKeyPrefix+DefaultJJLCategoryKeys[i], redis.Z{Member: db.HeroIDToName[heroID], Score: winRate}).Err()
+		if err != nil {
+			return
+		}
+		err = db.RDB.ZAdd(context.Background(), HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], redis.Z{Member: db.HeroIDToName[heroID], Score: float64(stages[i][1])}).Err()
+		if err != nil {
+			return
+		}
+		err = db.RDB.ZAdd(context.Background(), HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], redis.Z{Member: db.HeroIDToName[heroID], Score: float64(stages[i][0])}).Err()
+		if err != nil {
+			return
+		}
+		err = db.RDB.Set(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID], time.Now().Unix(), 0).Err()
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// GetHeroWinRate
+//
+//	stages[*][0]: 胜场
+//	stages[*][1]: 场次
+func GetHeroWinRate(heroID int) (stages [][2]float64, timestamp uint64, err error) {
+	_, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
+	if err != nil && UpdateHeroWinRate(heroID) != nil {
+		return nil, 0, err
+	} else {
+		err = nil
+	}
+	stages = make([][2]float64, len(DefaultJJLCategoryKeys))
+	for i := range stages {
+		tmp, err := db.RDB.ZScore(context.Background(), HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
+		if err != nil {
+			return nil, 0, err
+		}
+		stages[i][0] = tmp
+		tmp, err = db.RDB.ZScore(context.Background(), HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
+		if err != nil {
+			return nil, 0, err
+		}
+		stages[i][1] = tmp
+	}
+	timestamp, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
+	return
 }
