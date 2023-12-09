@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"eebot/bot/router"
+	"eebot/bot/service/analysis300/analysis"
 	"eebot/bot/service/analysis300/collect"
 	"eebot/bot/service/analysis300/db"
 	"eebot/bot/service/http"
@@ -11,6 +12,7 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +24,12 @@ var Analysis300Cmd = &cobra.Command{
 		db.InitMysql()
 		g.InitLog()
 		collect.InitCrawler()
+		go func() {
+			c := cron.New()
+			c.AddFunc("0 0 4 * * *", analysis.UpdateAllHeroWinRate)
+			c.Start()
+		}()
+
 		for {
 			if err := ws.InitWebsocket(); err != nil {
 				continue

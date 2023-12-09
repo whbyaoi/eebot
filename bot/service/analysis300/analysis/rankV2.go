@@ -3,6 +3,7 @@ package analysis
 import (
 	"context"
 	"eebot/bot/service/analysis300/db"
+	"eebot/g"
 	"slices"
 	"sort"
 	"time"
@@ -524,4 +525,13 @@ func GetHeroWinRate(heroID int) (stages [][2]float64, timestamp uint64, err erro
 	}
 	timestamp, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
 	return
+}
+
+func UpdateAllHeroWinRate() {
+	for id, name := range db.HeroIDToName {
+		err := UpdateHeroWinRate(id)
+		if err != nil {
+			g.Logger.Errorf("更新 %s 胜率错误：%s", name, err.Error())
+		}
+	}
 }
