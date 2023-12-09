@@ -406,8 +406,15 @@ func SortRank(heroDataSlice []*HeroData) (sortedData map[string][]*HeroData) {
 // GetAppraise 获取单条战绩的评价
 func GetAppraise(play db.Player) (appraise string) {
 	idToRecord := QueryHeroData(play.HeroID)
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 26; i++ {
 		idToRecord[0] = append(idToRecord[0], db.ToPartition(play))
+	}
+	for i := range idToRecord[0][:14]{
+		if idToRecord[0][14].Result==1 || idToRecord[0][14].Result==3{
+			idToRecord[0][i].Result = 2
+		} else{
+			idToRecord[0][i].Result = 1
+		}
 	}
 	heroDataSlice, _ := CalculateData(idToRecord, 0, play.HeroID)
 	clear(idToRecord)

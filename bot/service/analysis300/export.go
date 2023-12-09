@@ -598,6 +598,8 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 			}
 			msg += fmt.Sprintf("总计人数：%d\n页码：%d/%d\n", len(plays), page, total)
 			return
+		} else if HeroName[:4] == "hero"{
+			
 		}
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}

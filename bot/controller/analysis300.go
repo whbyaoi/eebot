@@ -155,7 +155,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			}
 		}
 		if name == "" {
-			err = errors.New("该指令必须指定英雄")
+			err = errors.New("该指令必须包含参数")
 		} else {
 			suffix, err = analysis300.ExportTopAnalysis(name, fv)
 		}
