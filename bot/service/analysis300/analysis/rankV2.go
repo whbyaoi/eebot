@@ -4,6 +4,7 @@ import (
 	"context"
 	"eebot/bot/service/analysis300/db"
 	"eebot/g"
+	"fmt"
 	"slices"
 	"sort"
 	"time"
@@ -437,6 +438,11 @@ var HeroWinCountKeyPrefix = "hero_win_count:"
 var HeroDataTimestamp = "hero_data_timestamp:"
 
 func UpdateHeroWinRate(heroID int) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("更新 %s胜率错误：%w", db.HeroIDToName[heroID], err)
+		}
+	}()
 	ps, err := GlobalHeroAnalysis(db.HeroIDToName[heroID])
 	if err != nil {
 		return
@@ -474,6 +480,22 @@ func UpdateHeroWinRate(heroID int) (err error) {
 			}
 		}
 	}
+	var winRate float64
+	if len(matchIDs) != 0 {
+		winRate = float64(win) / float64(len(matchIDs))
+	}
+	err = db.RDB.ZAdd(context.Background(), HeroWinRateKeyPrefix+"total", redis.Z{Member: db.HeroIDToName[heroID], Score: winRate}).Err()
+	if err != nil {
+		return
+	}
+	err = db.RDB.ZAdd(context.Background(), HeroPlayCountKeyPrefix+"total", redis.Z{Member: db.HeroIDToName[heroID], Score: float64(len(matchIDs))}).Err()
+	if err != nil {
+		return
+	}
+	err = db.RDB.ZAdd(context.Background(), HeroWinCountKeyPrefix+"total", redis.Z{Member: db.HeroIDToName[heroID], Score: float64(win)}).Err()
+	if err != nil {
+		return
+	}
 	for i := range stages {
 		var winRate float64
 		if float64(stages[i][1]) != 0 {
@@ -503,27 +525,43 @@ func UpdateHeroWinRate(heroID int) (err error) {
 //
 //	stages[*][0]: 胜场
 //	stages[*][1]: 场次
-func GetHeroWinRate(heroID int) (stages [][2]float64, timestamp uint64, err error) {
+func GetHeroWinRate(heroID int) (stages [][2]float64, total [2]float64, timestamp uint64, err error) {
 	_, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
-	if err != nil && UpdateHeroWinRate(heroID) != nil {
-		return nil, 0, err
+	if err != nil {
+		err = UpdateHeroWinRate(heroID)
+		if err != nil {
+			return nil, total, 0, err
+		}
 	} else {
 		err = nil
 	}
+	tmp, err := db.RDB.ZScore(context.Background(), HeroWinCountKeyPrefix+"total", db.HeroIDToName[heroID]).Result()
+	if err != nil {
+		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroWinCountKeyPrefix+"total", err)
+	}
+	total[0] = tmp
+	tmp, err = db.RDB.ZScore(context.Background(), HeroPlayCountKeyPrefix+"total", db.HeroIDToName[heroID]).Result()
+	if err != nil {
+		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroPlayCountKeyPrefix+"total", err)
+	}
+	total[1] = tmp
 	stages = make([][2]float64, len(DefaultJJLCategoryKeys))
 	for i := range stages {
 		tmp, err := db.RDB.ZScore(context.Background(), HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
 		if err != nil {
-			return nil, 0, err
+			return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], err)
 		}
 		stages[i][0] = tmp
 		tmp, err = db.RDB.ZScore(context.Background(), HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
 		if err != nil {
-			return nil, 0, err
+			return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], err)
 		}
 		stages[i][1] = tmp
 	}
 	timestamp, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
+	if err != nil {
+		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroDataTimestamp+db.HeroIDToName[heroID], err)
+	}
 	return
 }
 
@@ -532,6 +570,8 @@ func UpdateAllHeroWinRate() {
 		err := UpdateHeroWinRate(id)
 		if err != nil {
 			g.Logger.Errorf("更新 %s 胜率错误：%s", name, err.Error())
+		} else {
+			g.Logger.Infof("更新 %s 胜率完成", name)
 		}
 	}
 }

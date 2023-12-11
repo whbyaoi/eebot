@@ -497,21 +497,16 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 }
 
 func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
-	stages, timestamp, err := analysis.GetHeroWinRate(db.HeroNameToID[HeroName])
+	stages, total, timestamp, err := analysis.GetHeroWinRate(db.HeroNameToID[HeroName])
 	if err != nil {
 		return "", err
 	}
-	total_win, total := 0.0, 0.0
-	for i := range stages {
-		total_win += stages[i][0]
-		total += stages[i][1]
-	}
-	msg += fmt.Sprintf("英雄：%s，单方面出现场次：%d(最近30天)\n", HeroName, int(total))
-	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", total_win/total*100)
+	msg += fmt.Sprintf("英雄：%s，单方面出现场次：%d(最近30天)\n", HeroName, int(total[1]))
+	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", total[0]/total[1]*100)
 	msg += "对局分段 / 占比 / 胜率 / 场次\n"
 	for i := range stages {
 		if stages[i][1] > 0 {
-			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], stages[i][1]/total*100, stages[i][0]/stages[i][1]*100, int(stages[i][1]))
+			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], stages[i][1]/total[1]*100, stages[i][0]/stages[i][1]*100, int(stages[i][1]))
 		}
 	}
 	msg += "缓存时间：" + time.Unix(int64(timestamp), 0).Format(time.DateTime)
@@ -571,8 +566,6 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 			}
 			msg += fmt.Sprintf("总计人数：%d\n页码：%d/%d\n", len(plays), page, total)
 			return
-		} else if HeroName[:4] == "hero" {
-
 		}
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}
@@ -593,6 +586,55 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 		}
 		msg += fmt.Sprintf("%d、%s，评分：%.1f\n均分：%d，单排率：%.1f%%\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score, int(data[i].AvgJJL), cnt/data[i].Total*100)
 	}
+	return
+}
+
+func ExportWinRateAnalysis(pageStr, scope string) (msg string, err error) {
+	page := 1
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+	}
+	if err != nil || page < 1 {
+		return msg, errors.New("错误页码")
+	}
+	dataMap := map[string][2]int{}
+	if scope == "" {
+		scope = "total"
+	}
+	rs, _ := db.RDB.ZRangeWithScores(context.Background(), analysis.HeroPlayCountKeyPrefix+scope, 0, -1).Result()
+	for i := range rs {
+		dataMap[rs[i].Member.(string)] = [2]int{0, int(rs[i].Score)}
+	}
+	rs, _ = db.RDB.ZRangeWithScores(context.Background(), analysis.HeroWinCountKeyPrefix+scope, 0, -1).Result()
+	for i := range rs {
+		if v, ok := dataMap[rs[i].Member.(string)]; ok {
+			v[0] = int(rs[i].Score)
+			dataMap[rs[i].Member.(string)] = v
+		}
+	}
+	data := [][3]int{}
+	for name, arr := range dataMap {
+		data = append(data, [3]int{db.HeroNameToID[name], arr[0], arr[1]})
+	}
+	if err != nil {
+		return "", err
+	}
+	sort.Slice(data, func(i, j int) bool {
+		return float64(data[i][1])/float64(data[i][2]) > float64(data[j][1])/float64(data[j][2])
+	})
+	if scope == "" {
+		scope = "全局"
+	}
+	msg += fmt.Sprintf("近30天英雄胜率排行，范围：%s\n", scope)
+	msg += "英雄名称 胜率 场次\n"
+	for i := (page - 1) * 10; i < min(len(data), page*10); i++ {
+		msg += fmt.Sprintf("%d、%s，%.1f%%，%d\n", i+1, db.HeroIDToName[data[i][0]], float64(data[i][1])/float64(data[i][2])*100, data[i][2])
+	}
+	total := len(data) / 10
+	if len(data)%10 > 0 {
+		total++
+	}
+	msg += fmt.Sprintf("页码：%d/%d", page, total)
 	return
 }
 

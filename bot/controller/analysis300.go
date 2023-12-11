@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-var NoWait = []string{"help", "菜单", "g", "g1", "f", "g2", "top", "topa", "active", "flush", "", "test"}
+var NoWait = []string{"help", "菜单", "g", "g1", "f", "g2", "win", "top", "topa", "active", "flush", "", "test"}
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
@@ -105,9 +105,9 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		var page int64 = 1
 		if len(rawMessageSlice) > 3 {
 			page, err = strconv.ParseInt(rawMessageSlice[3], 10, 64)
-				if err != nil || page <= 0 {
-					err = errors.New("错误页码")
-				}
+			if err != nil || page <= 0 {
+				err = errors.New("错误页码")
+			}
 		}
 		suffix, err = analysis300.ExportFindPlayer(name, int(page))
 	case "g", "g1": // 全局英雄
@@ -159,6 +159,19 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		} else {
 			suffix, err = analysis300.ExportTopAnalysis(name, fv)
 		}
+	case "win":
+		scope := ""
+		if len(rawMessageSlice) > 3 {
+			for _, tmp := range analysis.DefaultJJLCategoryKeys {
+				if tmp == rawMessageSlice[3] {
+					scope = tmp
+				}
+			}
+			if scope == "" {
+				err = fmt.Errorf("未知竞技力范围：%s", rawMessageSlice[3])
+			}
+		}
+		suffix, err = analysis300.ExportWinRateAnalysis(name, scope)
 	case "topa":
 		var fv int
 		if len(rawMessageSlice) > 3 {
@@ -208,6 +221,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "g2 英雄名称 - 全局英雄分析(场均各分段的出场及胜率情况)\n"
 		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
 		suffix += "top jjl[可选]页码 - jjl月榜\n"
+		suffix += "win 页码 竞技力范围 - 英雄胜率榜\n"
 		suffix += "topa 英雄名称 [可选]团分下限 - 月榜前10(附带计算详情)\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
 	case "test":

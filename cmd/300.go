@@ -26,7 +26,7 @@ var Analysis300Cmd = &cobra.Command{
 		collect.InitCrawler()
 		go func() {
 			c := cron.New()
-			c.AddFunc("0 0 4 * * *", analysis.UpdateAllHeroWinRate)
+			c.AddFunc("@midnight", analysis.UpdateAllHeroWinRate)
 			c.Start()
 		}()
 
