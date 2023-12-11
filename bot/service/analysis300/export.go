@@ -178,7 +178,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 	}
 	diff2 /= len(rs)
 	msg += fmt.Sprintf("昵称：%s，记录场次：%d，团分跨度：%d - %d，时间跨度：%s - %s\n", name, len(rs), fvRange[0], fvRange[1], time.Unix(int64(timeRange[0]), 0).Format("20060102"), time.Unix(int64(timeRange[1]), 0).Format("20060102"))
-	msg += fmt.Sprintf("当前团分：%d，安定团分：%d，胜率：%.1f%%\n", fvNow, analysis.StableJJLLAnalysis(PlayerID), float32(win)/float32(win+lose)*100)
+	msg += fmt.Sprintf("当前团分：%d，胜率：%.1f%%\n", fvNow, float32(win)/float32(win+lose)*100)
 	msg += fmt.Sprintf("玩家分相对场均分水平：%d\n", diff)
 	msg += fmt.Sprintf("总记录 %d 局中有 %d 局(%.1f%%) 己方均分高于对面\n",
 		len(rs),
@@ -497,6 +497,9 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 }
 
 func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
+	if _, ok := db.HeroNameToID[HeroName]; !ok {
+		return "未知英雄 " + HeroName, nil
+	}
 	stages, total, timestamp, err := analysis.GetHeroWinRate(db.HeroNameToID[HeroName])
 	if err != nil {
 		return "", err
