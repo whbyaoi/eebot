@@ -168,7 +168,11 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 				}
 			}
 			if scope == "" {
-				err = fmt.Errorf("未知竞技力范围：%s", rawMessageSlice[3])
+				suffix += fmt.Sprintf("未知竞技力范围：%s\n支持的竞技力范围：", rawMessageSlice[3])
+				for _, tmp := range analysis.DefaultJJLCategoryKeys{
+					suffix += tmp + "\n"
+				}
+				break
 			}
 		}
 		suffix, err = analysis300.ExportWinRateAnalysis(name, scope)
