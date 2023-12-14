@@ -149,7 +149,7 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		return
 	}
 
-	rs, diff, svd, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
+	rs, diff, fixDiff, fixCount, svd, fvNow, timeRange := analysis.WinOrLoseAnalysisAdvanced(PlayerID)
 	_, _, _, scope, _, _ := analysis.JJLCompositionAnalysis(PlayerID, 0)
 	if len(rs) == 0 {
 		return "", errors.New("查询不到任何战绩")
@@ -184,7 +184,9 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		len(rs),
 		cnt1+lose-cnt2,
 		float32(cnt1+lose-cnt2)/float32(len(rs))*100)
+	msg += fmt.Sprintf("除开自身与对位敌人有 %d 局(%.1f%%) 己方六人团分高于对面六人\n", fixCount, float64(fixCount)/float64(len(rs))*100)
 	msg += fmt.Sprintf("己方均分相对敌方均分水平：%d\n", diff2)
+	msg += fmt.Sprintf("己方其他六人均分相对敌方六人均分水平：%d\n", fixDiff)
 	msg += fmt.Sprintf("己方团分离散度相对敌方团分离散度水平：%d\n", svd)
 
 	stages := make([][2]int, len(analysis.DefaultJJLCategoryKeys))

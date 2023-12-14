@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -51,7 +52,7 @@ func ShuffleAnalysis(PlayerID uint64) (avgInterval int, than10min int, validCnt 
 //	fixDiff: 修正双方均分差
 //	fvNow: 目前团分
 //	timeRange: 时间范围
-func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff int, svd int, fvNow int, timeRange [2]uint64) {
+func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixDiff, fixCount, svd, fvNow int, timeRange [2]uint64) {
 	matches, myPlays := GetMatchAndMyPlays(PlayerID, 0)
 	if len(matches) == 0 {
 		return
@@ -63,6 +64,8 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff int, 
 		var tmp [6]float64
 		fvSum1 := 0 // 己方团分
 		fvSum2 := 0 // 对面团分
+		fvArr1 := []int{}
+		fvArr2 := []int{}
 		for j := range matches[i].Players {
 			tmp[5] += float64(matches[i].Players[j].FV)
 			if matches[i].Players[j].PlayerID == PlayerID {
@@ -70,8 +73,10 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff int, 
 			}
 			if matches[i].Players[j].Side == myPlays[i].Side {
 				fvSum1 += matches[i].Players[j].FV
+				fvArr1 = append(fvArr1, matches[i].Players[j].FV)
 			} else {
 				fvSum2 += matches[i].Players[j].FV
+				fvArr2 = append(fvArr2, matches[i].Players[j].FV)
 			}
 		}
 		tmp[0] = float64(fvSum1 / 7)
@@ -124,9 +129,20 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff int, 
 			}
 		}
 		result = append(result, tmp)
+
+		sort.Slice(fvArr1, func(i, j int) bool { return fvArr1[i] < fvArr1[j] })
+		sort.Slice(fvArr2, func(i, j int) bool { return fvArr2[i] < fvArr2[j] })
+		index, _ := slices.BinarySearch[[]int](fvArr1, myPlays[i].FV)
+		fvSum1 -= fvArr1[index]
+		fvSum2 -= fvArr2[index]
+		if fvSum1 > fvSum2 {
+			fixCount++
+		}
+		fixDiff += fvSum1 - fvSum2
 	}
 	if len(matches) != 0 {
 		diff /= len(matches)
+		fixDiff /= len(matches)
 		svd /= len(matches)
 	}
 	return
