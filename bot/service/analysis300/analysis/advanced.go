@@ -138,7 +138,7 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixD
 		if fvSum1 > fvSum2 {
 			fixCount++
 		}
-		fixDiff += fvSum1 - fvSum2
+		fixDiff += (fvSum1 - fvSum2) / 6
 	}
 	if len(matches) != 0 {
 		diff /= len(matches)
