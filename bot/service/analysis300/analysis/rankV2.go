@@ -275,10 +275,10 @@ func CalculateData(idToData map[uint64][]db.PlayerPartition, fv int, HeroID int)
 				heroData.ActualWin++
 			}
 			if play.FV < fv {
-				break
+				continue
 			}
 			if heroData.Total >= 50 {
-				break
+				continue
 			}
 			heroData.Total++
 			if play.Result == 1 || play.Result == 3 {
