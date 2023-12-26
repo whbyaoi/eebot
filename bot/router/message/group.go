@@ -21,7 +21,7 @@ func GroupMessageHub(gm model.GroupMessage) (err error) {
 		err = controller.AnalysisHub(slices[1:], true, gm.UserID, gm.GroupID)
 	default:
 		prefix := fmt.Sprintf("[CQ:at,qq=%d] \n", gm.UserID)
-		msg := "未知服务名：" + slices[1]
+		msg := "未知服务名：" + action
 		msg += "\n目前支持服务名：300"
 		service.Reply(msg, prefix, gm.GroupID)
 	}
