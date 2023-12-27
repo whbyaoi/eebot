@@ -23,7 +23,7 @@ var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 //
 //	rawMessageSlice[0]: 300
 //	rawMessageSlice[1]: 指令缩写
-//	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 团分下限)
+//	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 竞技力下限)
 func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
 	var svc string
 	var name string
@@ -169,7 +169,7 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 			}
 			if scope == "" {
 				suffix += fmt.Sprintf("未知竞技力范围：%s\n支持的竞技力范围：", rawMessageSlice[3])
-				for _, tmp := range analysis.DefaultJJLCategoryKeys{
+				for _, tmp := range analysis.DefaultJJLCategoryKeys {
 					suffix += tmp + "\n"
 				}
 				break
@@ -219,14 +219,14 @@ func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetI
 		suffix += "jjl2 玩家 - 竞技力成分分析\n"
 		suffix += "pk 玩家 英雄名称 - 与榜一比较\n"
 		suffix += "r 玩家 [可选]英雄名称 - 近10场jjc数据\n"
-		suffix += "h 玩家 英雄名称 [可选]团分下限 - 英雄分析\n"
+		suffix += "h 玩家 英雄名称 [可选]竞技力下限 - 英雄分析\n"
 		suffix += "f 英雄/k/d/a/补刀/经济/竞技力 - 战绩找人，其中英雄/k/d/a为必填，其余选填可空\n"
 		suffix += "g 英雄名称 - 全局英雄分析(使用者各分段的出场及胜率情况)\n"
 		suffix += "g2 英雄名称 - 全局英雄分析(场均各分段的出场及胜率情况)\n"
-		suffix += "top 英雄名称 [可选]团分下限 - 月榜前10\n"
+		suffix += "top 英雄名称 [可选]竞技力下限 - 月榜前10\n"
 		suffix += "top jjl[可选]页码 - jjl月榜\n"
 		suffix += "win 页码 竞技力范围 - 英雄胜率榜\n"
-		suffix += "topa 英雄名称 [可选]团分下限 - 月榜前10(附带计算详情)\n"
+		suffix += "topa 英雄名称 [可选]竞技力下限 - 月榜前10(附带计算详情)\n"
 		suffix += "flush 英雄名称 - 刷新月榜"
 	case "test":
 		if !HasAuth(sourceID) {

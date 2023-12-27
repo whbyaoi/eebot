@@ -36,7 +36,7 @@ CREATE TABLE `players` (
   `treat` int NOT NULL COMMENT '未知',
   `put_eyes` int NOT NULL COMMENT '插眼数',
   `destory_eyes` int NOT NULL COMMENT '排眼数',
-  `elo` int NOT NULL COMMENT '团分（已废弃',
+  `elo` int NOT NULL COMMENT '竞技力（已废弃',
   `fv` int NOT NULL COMMENT '竞技力',
   `total_money_side` int NOT NULL COMMENT '己方总经济',
   `total_money_percent` double NOT NULL COMMENT '个人经济占比',

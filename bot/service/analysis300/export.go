@@ -177,17 +177,17 @@ func ExportWinOrLoseAnalysisAdvanced(name string) (msg string, err error) {
 		diff2 += int(rs[i][0] - rs[i][1])
 	}
 	diff2 /= len(rs)
-	msg += fmt.Sprintf("昵称：%s，记录场次：%d，团分跨度：%d - %d，时间跨度：%s - %s\n", name, len(rs), fvRange[0], fvRange[1], time.Unix(int64(timeRange[0]), 0).Format("20060102"), time.Unix(int64(timeRange[1]), 0).Format("20060102"))
-	msg += fmt.Sprintf("当前团分：%d，胜率：%.1f%%\n", fvNow, float32(win)/float32(win+lose)*100)
+	msg += fmt.Sprintf("昵称：%s，记录场次：%d，竞技力跨度：%d - %d，时间跨度：%s - %s\n", name, len(rs), fvRange[0], fvRange[1], time.Unix(int64(timeRange[0]), 0).Format("20060102"), time.Unix(int64(timeRange[1]), 0).Format("20060102"))
+	msg += fmt.Sprintf("当前竞技力：%d，胜率：%.1f%%\n", fvNow, float32(win)/float32(win+lose)*100)
 	msg += fmt.Sprintf("玩家分相对场均分水平：%d\n", diff)
 	msg += fmt.Sprintf("总记录 %d 局中有 %d 局(%.1f%%) 己方均分高于对面\n",
 		len(rs),
 		cnt1+lose-cnt2,
 		float32(cnt1+lose-cnt2)/float32(len(rs))*100)
-	msg += fmt.Sprintf("除开自身与对位敌人有 %d 局(%.1f%%) 己方六人团分高于对面六人\n", fixCount, float64(fixCount)/float64(len(rs))*100)
+	msg += fmt.Sprintf("除开自身与对位敌人有 %d 局(%.1f%%) 己方六人竞技力高于对面六人\n", fixCount, float64(fixCount)/float64(len(rs))*100)
 	msg += fmt.Sprintf("己方均分相对敌方均分水平：%d\n", diff2)
 	msg += fmt.Sprintf("己方其他六人均分相对敌方六人均分水平：%d\n", fixDiff)
-	msg += fmt.Sprintf("己方团分离散度相对敌方团分离散度水平：%d\n", svd)
+	msg += fmt.Sprintf("己方竞技力离散度相对敌方竞技力离散度水平：%d\n", svd)
 
 	stages := make([][2]int, len(analysis.DefaultJJLCategoryKeys))
 	for i := range rs {
@@ -276,7 +276,7 @@ func ExportShuffleAnalysisAdvanced(name string) (msg string, err error) {
 	return
 }
 
-// ExportAssignHeroAnalysisAdvancedV2 分析fv团分上的玩家的英雄数据
+// ExportAssignHeroAnalysisAdvancedV2 分析fv竞技力上的玩家的英雄数据
 func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg string, err error) {
 	PlayerID, err := collect.SearchRoleID(name)
 	if err != nil {
@@ -304,7 +304,7 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 	}
 	msg += fmt.Sprintf("昵称：%s(只会计算近30天战绩)\n", name)
 	msg += fmt.Sprintf("英雄：%s\n", hero)
-	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，团分下限：%d\n", total, int(analysis.ValidTimes), fv)
+	msg += fmt.Sprintf("有 %d 名玩家记录场次超过了 %d 次，竞技力下限：%d\n", total, int(analysis.ValidTimes), fv)
 	msg += fmt.Sprintf("实际场次：%d，参与计算场次：%d\n", uint64(heroData.ActualTotal), uint64(heroData.Total))
 	msg += fmt.Sprintf("单排率：%1.f%%\n", cnt/heroData.Total*100)
 	msg += fmt.Sprintf("净上分：%d，上分：%d，掉分：%d\n", int(jjl[db.HeroNameToID[hero]][0]+jjl[db.HeroNameToID[hero]][1]),
@@ -557,7 +557,7 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 			sort.Slice(plays, func(i, j int) bool {
 				return plays[i].FV > plays[j].FV
 			})
-			msg += "团分排行榜(只会计算近30天战绩)：\n"
+			msg += "竞技力排行榜(只会计算近30天战绩)：\n"
 			for i := (page - 1) * 10; i < int64(len(plays)); i++ {
 				if i >= page*10 {
 					break
@@ -576,7 +576,7 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 	}
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数至少5次、至多50次的战绩)\n", HeroName, fv, total)
+	msg += fmt.Sprintf("英雄：%s，玩家竞技力下限：%d，总计人数：%d(只会计算近30天游玩次数至少5次、至多50次的战绩)\n", HeroName, fv, total)
 	for i := range data {
 		_, plays, marks, _, _ := analysis.MarkTeam(data[i].PlayerID)
 		marksMap := map[string]int{}
@@ -650,7 +650,7 @@ func ExportTopWithDetailAnalysis(HeroName string, fv int) (msg string, err error
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
 
-	msg += fmt.Sprintf("英雄：%s，玩家团分下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
+	msg += fmt.Sprintf("英雄：%s，玩家竞技力下限：%d，总计人数：%d(只会计算近30天游玩次数超过五次的战绩)\n", HeroName, fv, total)
 	for i := range data {
 		msg += fmt.Sprintf("%d、%s，评分：%.1f\n", i+1, collect.SearchName(data[i].PlayerID), data[i].Score)
 	}

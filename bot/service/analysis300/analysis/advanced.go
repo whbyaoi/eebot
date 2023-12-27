@@ -44,13 +44,13 @@ func ShuffleAnalysis(PlayerID uint64) (avgInterval int, than10min int, validCnt 
 //	result[0]: 己方均分
 //	result[1]: 敌方均分
 //	result[2]: 输赢 1-赢，2-输
-//	result[3]: 自己团分
+//	result[3]: 自己竞技力
 //	result[4]: 局类型 0-杀鸡，1-本地，2-壮丁
 //	result[5]: 均分
 //	diff: 玩家分相对场均分差
 //	svd: 离散度差
 //	fixDiff: 修正双方均分差
-//	fvNow: 目前团分
+//	fvNow: 目前竞技力
 //	timeRange: 时间范围
 func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixDiff, fixCount, svd, fvNow int, timeRange [2]uint64) {
 	matches, myPlays := GetMatchAndMyPlays(PlayerID, 0)
@@ -62,8 +62,8 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixD
 	fvNow = myPlays[len(myPlays)-1].FV
 	for i := range matches {
 		var tmp [6]float64
-		fvSum1 := 0 // 己方团分
-		fvSum2 := 0 // 对面团分
+		fvSum1 := 0 // 己方竞技力
+		fvSum2 := 0 // 对面竞技力
 		fvArr1 := []int{}
 		fvArr2 := []int{}
 		for j := range matches[i].Players {
@@ -103,12 +103,12 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixD
 		// 判断局类型
 		tmp[4] = 1
 		avg := (tmp[0] + tmp[1]) / 2
-		// 只要自己团分比均分低100，直接判断为壮丁局
+		// 只要自己竞技力比均分低100，直接判断为壮丁局
 		if tmp[3]-avg < -100 {
 			tmp[4] = 2
 		}
-		// 自己团分比均分高100
-		// 找到对面有没有比自己高或者和自己团分相似的人，若没有，则是杀鸡
+		// 自己竞技力比均分高100
+		// 找到对面有没有比自己高或者和自己竞技力相似的人，若没有，则是杀鸡
 		if tmp[3]-avg > 100 {
 			flag := false
 			for j := range matches[i].Players {
@@ -148,7 +148,7 @@ func WinOrLoseAnalysisAdvanced(PlayerID uint64) (result [][6]float64, diff, fixD
 	return
 }
 
-// IsSimilarFV 比较两个团分是否相似
+// IsSimilarFV 比较两个竞技力是否相似
 func IsSimilarFV(fv1, fv2 int) bool {
 	if fv1 >= 2100 && fv2 >= 2100 {
 		return true
