@@ -285,6 +285,9 @@ func ExportAssignHeroAnalysisAdvancedV2(name string, hero string, fv int) (msg s
 	if _, ok := db.HeroNameToID[hero]; !ok {
 		return "未知英雄 " + hero, nil
 	}
+	if _, ok := analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[hero]]]; !ok {
+		return "", fmt.Errorf("英雄 %s 的计算权重不存在", db.HeroIDToName[db.HeroNameToID[hero]])
+	}
 	heroDataSlice, total := analysis.GetRankFromPlayers(db.HeroNameToID[hero], fv, []uint64{PlayerID})
 	if _, ok := heroDataSlice[PlayerID]; !ok {
 		return fmt.Sprintf("%s 最近30天无 %s 战绩", name, hero), nil
@@ -574,7 +577,9 @@ func ExportTopAnalysis(HeroName string, fv int) (msg string, err error) {
 		}
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
 	}
-
+	if _, ok := analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[HeroName]]]; !ok {
+		return "", fmt.Errorf("英雄 %s 的计算权重不存在", db.HeroIDToName[db.HeroNameToID[HeroName]])
+	}
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
 	msg += fmt.Sprintf("英雄：%s，玩家竞技力下限：%d，总计人数：%d(只会计算近30天游玩次数至少5次、至多50次的战绩)\n", HeroName, fv, total)
 	for i := range data {
@@ -646,6 +651,9 @@ func ExportWinRateAnalysis(pageStr, scope string) (msg string, err error) {
 func ExportTopWithDetailAnalysis(HeroName string, fv int) (msg string, err error) {
 	if _, ok := db.HeroNameToID[HeroName]; !ok {
 		return "", fmt.Errorf("不存在 %s 英雄", HeroName)
+	}
+	if _, ok := analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[HeroName]]]; !ok {
+		return "", fmt.Errorf("英雄 %s 的计算权重不存在", db.HeroIDToName[db.HeroNameToID[HeroName]])
 	}
 
 	data, total := analysis.GetRankFromTop(db.HeroNameToID[HeroName], fv, 10)
@@ -826,6 +834,9 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	}
 	if _, ok := db.HeroNameToID[hero]; !ok {
 		return "未知英雄 " + name, nil
+	}
+	if _, ok := analysis.HeroFactor[db.HeroIDToName[db.HeroNameToID[hero]]]; !ok {
+		return "", fmt.Errorf("英雄 %s 的计算权重不存在", db.HeroIDToName[db.HeroNameToID[hero]])
 	}
 	you, top1, err := analysis.PKAnalysis(PlayerID, db.HeroNameToID[hero])
 	if err != nil {
