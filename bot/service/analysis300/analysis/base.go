@@ -415,7 +415,7 @@ func MarkTeam(PlayerID uint64) (matches []db.Match, myPlays []db.Player, marks [
 		}
 	}
 	sort.Slice(sortedAllies, func(i int, j int) bool { return sortedAllies[i][3] > sortedAllies[j][3] })
-	top10Allies := [][4]uint64{}
+	top10Allies := sortedAllies
 	for i := range sortedAllies {
 		if i >= 10 || sortedAllies[i][3] <= 3 {
 			top10Allies = sortedAllies[:i]

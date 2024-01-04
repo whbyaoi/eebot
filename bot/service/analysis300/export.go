@@ -99,7 +99,7 @@ func ExportTeamAnalysis(name string) (msg string, err error) {
 		if i >= 7 {
 			break
 		}
-		if allies[i][2] > 0 {
+		if allies[i][1] > 0 {
 			msg += fmt.Sprintf("%d、%s，%d局(%.1f%%)，胜率：%.1f%%，净上分：%d\n",
 				i+1,
 				collect.SearchName(allies[i][0]),
