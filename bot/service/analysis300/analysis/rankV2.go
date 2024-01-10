@@ -536,30 +536,30 @@ func GetHeroWinRate(heroID int) (stages [][2]float64, total [2]float64, timestam
 		err = nil
 	}
 	tmp, err := db.RDB.ZScore(context.Background(), HeroWinCountKeyPrefix+"total", db.HeroIDToName[heroID]).Result()
-	if err != nil {
+	if err != nil && err.Error() != "redis: nil" {
 		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroWinCountKeyPrefix+"total", err)
 	}
 	total[0] = tmp
 	tmp, err = db.RDB.ZScore(context.Background(), HeroPlayCountKeyPrefix+"total", db.HeroIDToName[heroID]).Result()
-	if err != nil {
+	if err != nil && err.Error() != "redis: nil" {
 		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroPlayCountKeyPrefix+"total", err)
 	}
 	total[1] = tmp
 	stages = make([][2]float64, len(DefaultJJLCategoryKeys))
 	for i := range stages {
 		tmp, err := db.RDB.ZScore(context.Background(), HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
-		if err != nil {
+		if err != nil && err.Error() != "redis: nil" {
 			return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroWinCountKeyPrefix+DefaultJJLCategoryKeys[i], err)
 		}
 		stages[i][0] = tmp
 		tmp, err = db.RDB.ZScore(context.Background(), HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], db.HeroIDToName[heroID]).Result()
-		if err != nil {
+		if err != nil && err.Error() != "redis: nil" {
 			return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroPlayCountKeyPrefix+DefaultJJLCategoryKeys[i], err)
 		}
 		stages[i][1] = tmp
 	}
 	timestamp, err = db.RDB.Get(context.Background(), HeroDataTimestamp+db.HeroIDToName[heroID]).Uint64()
-	if err != nil {
+	if err != nil && err.Error() != "redis: nil" {
 		return nil, total, 0, fmt.Errorf("获取 %s胜率时，获取%s错误：%w", db.HeroIDToName[heroID], HeroDataTimestamp+db.HeroIDToName[heroID], err)
 	}
 	return
