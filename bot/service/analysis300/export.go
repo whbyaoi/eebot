@@ -461,7 +461,7 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 	msg += "[使用者分段(占比): 胜率, 场次]\n"
 	for i := range count{
 		if count[i][1] > 0{
-			msg += fmt.Sprintf("%s(%.1f%%): %.1f%%, %d", analysis.DefaultJJLCategoryKeys[i], count[i][1]/all, count[i][0]/count[i][1]*100, int(count[i][1]))
+			msg += fmt.Sprintf("%s(%.1f%%): %.1f%%, %d\n", analysis.DefaultJJLCategoryKeys[i], count[i][1]/all, count[i][0]/count[i][1]*100, int(count[i][1]))
 		}
 	}
 	return
