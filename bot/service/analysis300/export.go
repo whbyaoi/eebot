@@ -785,7 +785,7 @@ func ExportJJLCompositionAnalysis(name string) (msg string, err error) {
 	if err != nil {
 		return
 	}
-	team, _, scope, _, hero, total := analysis.JJLCompositionAnalysis(PlayerID, 0)
+	team, _, enermies, _, hero, total := analysis.JJLCompositionAnalysis(PlayerID, 0)
 	heroArr := [][4]float64{}
 	for heroID, data := range hero {
 		heroArr = append(heroArr, [4]float64{data[0], data[1], data[2], float64(heroID)})
@@ -799,11 +799,11 @@ func ExportJJLCompositionAnalysis(name string) (msg string, err error) {
 			msg += fmt.Sprintf("%s%d场，占比%.1f%%，净上分：%d\n", ranges[i], int(team[i][2]), float64(team[i][2])/float64(total)*100, int(team[i][0])+int(team[i][1]))
 		}
 	}
-	ranges = []string{"1000-1500", "1500-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2500"}
+	ranges = analysis.DefaultJJLCategoryKeys
 	msg += "jjl来自对手玩家的分段情况：\n"
 	for i := range ranges {
-		if scope[i][2] > 0 {
-			msg += fmt.Sprintf("分段%s，%d人，净上分：%d\n", ranges[i], int(scope[i][2]), int(scope[i][0])+int(scope[i][1]))
+		if enermies[i][2] > 0 {
+			msg += fmt.Sprintf("分段%s，%d人，净上分：%d\n", ranges[i], int(enermies[i][2]), int(enermies[i][0])+int(enermies[i][1]))
 		}
 	}
 	other := [3]int{}

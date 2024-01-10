@@ -30,7 +30,7 @@ func (jc JJLCategoryKey) Index(jjl float64) int {
 	return -1
 }
 
-var DefaultJJLCategoryKeys = JJLCategoryKey{"0-1500", "1500-1600", "1600-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2100", "2100-2200", "2200-2500"}
+var DefaultJJLCategoryKeys = JJLCategoryKey{"0-1500", "1500-1600", "1600-1700", "1700-1800", "1800-1900", "1900-2000", "2000-2100", "2100-2200", "2200-2300", "2300-2500"}
 
 func JJLCategoriesByInterval(interval int) (categories JJLCategoryKey) {
 	for i := 1000; i <= 2500; i += interval {
