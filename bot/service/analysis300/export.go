@@ -380,7 +380,7 @@ func ExportFindPlayer(args string, page int) (msg string, err error) {
 		return "", fmt.Errorf("不存在 %s 英雄", argArr[0])
 	}
 	argArr[0] = fmt.Sprint(db.HeroNameToID[argArr[0]])
-	keyArr := []string{"hero_id", "kill_player", "death", "assist", "kill_unit", "total_money", "fv"}
+	keyArr := []string{"hero_id", "kill_player", "death", "assist", "kill_unit", "fv"}
 	if db.HasPartition() {
 		plays := []db.PlayerPartition{}
 		tmp := db.SqlDB.Model(db.PlayerPartition{})
@@ -391,7 +391,7 @@ func ExportFindPlayer(args string, page int) (msg string, err error) {
 		}
 		tmp.Order("create_time desc").Find(&plays)
 		msg += fmt.Sprintf("%d条匹配的游戏记录：\n", len(plays))
-		msg += "名称 k/d/a/补 钱 时间\n"
+		msg += "名称 k/d/a/补 时间\n"
 		if len(plays) != 0 && (page-1)*10 > len(plays)-1 {
 			return "页码超出范围", nil
 		}
@@ -413,7 +413,7 @@ func ExportFindPlayer(args string, page int) (msg string, err error) {
 		}
 		tmp.Order("create_time desc").Find(&plays)
 		msg += fmt.Sprintf("%d条匹配的游戏记录：\n", len(plays))
-		msg += "名称 k/d/a/补 钱 时间\n"
+		msg += "名称 k/d/a/补 时间\n"
 		if len(plays) != 0 && (page-1)*10 > len(plays)-1 {
 			return "页码超出范围", nil
 		}
@@ -438,21 +438,10 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 	for i := range ps {
 		MatchIDToPlayers[ps[i].MatchID] = append(MatchIDToPlayers[ps[i].MatchID], ps[i])
 	}
-
-	all := 0
-	win := 0
-	range0 := 0
-	win0 := 0
-	range1 := 0
-	win1 := 0
-	range2 := 0
-	win2 := 0
-	range3 := 0
-	win3 := 0
-	range4 := 0
-	win4 := 0
-	range5 := 0
-	win5 := 0
+	// [win, total]
+	count := make([][2]float64, len(analysis.DefaultJJLCategoryKeys))
+	all := 0.0
+	win := 0.0
 	for _, players := range MatchIDToPlayers {
 		// 双方都有该英雄
 		if len(players) >= 2 {
@@ -460,44 +449,21 @@ func ExportGlobalHeroAnalysis(HeroName string) (msg string, err error) {
 		}
 		// 场次+1
 		all += 1
-		for i := range players {
-			tmp := 0
-			// 赢了
-			if players[i].Result == 1 || players[i].Result == 3 {
-				win++
-				tmp = 1
-			}
-			if players[i].FV < 1500 {
-				range0++
-				win0 += tmp
-			} else if players[i].FV < 1700 && players[i].FV >= 1500 {
-				range1++
-				win1 += tmp
-			} else if players[i].FV < 1800 && players[i].FV >= 1700 {
-				range2++
-				win2 += tmp
-			} else if players[i].FV < 1900 && players[i].FV >= 1800 {
-				range3++
-				win3 += tmp
-			} else if players[i].FV < 2000 && players[i].FV >= 1900 {
-				range4++
-				win4 += tmp
-			} else if players[i].FV < 3000 && players[i].FV >= 2000 {
-				range5++
-				win5 += tmp
-			}
+		count[analysis.DefaultJJLCategoryKeys.Index(float64(players[0].FV))][1]++
+		if players[0].Result == 1 || players[0].Result == 3 {
+			win++
+			count[analysis.DefaultJJLCategoryKeys.Index(float64(players[0].FV))][0]++
 		}
 	}
 
-	msg += fmt.Sprintf("英雄：%s，出现次数：%d(最近30天)\n", HeroName, all)
-	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", analysis.Divide(uint64(win), uint64(all))*100)
-	msg += "(使用者分段 / 占比 / 场次 / 胜率)\n"
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%% \n", "1000-1500", analysis.Divide(uint64(range0), uint64(all))*100, range0, analysis.Divide(uint64(win0), uint64(range0))*100)
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1500-1700", analysis.Divide(uint64(range1), uint64(all))*100, range1, analysis.Divide(uint64(win1), uint64(range1))*100)
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1700-1800", analysis.Divide(uint64(range2), uint64(all))*100, range2, analysis.Divide(uint64(win2), uint64(range2))*100)
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1800-1900", analysis.Divide(uint64(range3), uint64(all))*100, range3, analysis.Divide(uint64(win3), uint64(range3))*100)
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "1900-2000", analysis.Divide(uint64(range4), uint64(all))*100, range4, analysis.Divide(uint64(win4), uint64(range4))*100)
-	msg += fmt.Sprintf("%s(%.1f%%)：%d, %.1f%%\n", "2000-2500", analysis.Divide(uint64(range5), uint64(all))*100, range5, analysis.Divide(uint64(win5), uint64(range5))*100)
+	msg += fmt.Sprintf("英雄：%s，单方面出现场次：%d(最近30天)\n", HeroName, int(all))
+	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", win/all*100)
+	msg += "[使用者分段(占比): 胜率, 场次]\n"
+	for i := range count{
+		if count[i][1] > 0{
+			msg += fmt.Sprintf("%s(%.1f%%): %.1f%%, %d", analysis.DefaultJJLCategoryKeys[i], count[i][1]/all, count[i][0]/count[i][1]*100, int(count[i][1]))
+		}
+	}
 	return
 }
 
@@ -511,7 +477,7 @@ func ExportGlobalHeroAnalysis2(HeroName string) (msg string, err error) {
 	}
 	msg += fmt.Sprintf("英雄：%s，单方面出现场次：%d(最近30天)\n", HeroName, int(total[1]))
 	msg += fmt.Sprintf("全局单方面胜率：%.1f%%\n", total[0]/total[1]*100)
-	msg += "对局分段 / 占比 / 胜率 / 场次\n"
+	msg += "[对局分段(占比): 胜率, 场次]\n"
 	for i := range stages {
 		if stages[i][1] > 0 {
 			msg += fmt.Sprintf("%s(%.1f%%): %.1f%% / %d\n", analysis.DefaultJJLCategoryKeys[i], stages[i][1]/total[1]*100, stages[i][0]/stages[i][1]*100, int(stages[i][1]))
