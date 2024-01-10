@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,6 +18,37 @@ func (jc JJLCategoryKey) GetRange(i int) [2]float64 {
 	s, _ := strconv.ParseFloat(start, 64)
 	e, _ := strconv.ParseFloat(end, 64)
 	return [2]float64{s, e}
+}
+
+// 获取在范围内的类别索引
+func (jc JJLCategoryKey) GetSpanIndexes(left int, right int) (indexes []int, err error) {
+	endpoint := map[string]struct{}{}
+	valid := []string{}
+	for i := range jc {
+		arr := strings.Split(jc[i], "-")
+		valid = append(valid, arr...)
+		endpoint[arr[0]] = struct{}{}
+		endpoint[arr[1]] = struct{}{}
+	}
+	if left >= right {
+		return nil, errors.New("范围左值大于右值")
+	}
+	if _, ok := endpoint[fmt.Sprintf("%d", left)]; !ok {
+		return nil, fmt.Errorf("范围左值 %d 不在可选范围 %v 内", left, valid)
+	}
+	if _, ok := endpoint[fmt.Sprintf("%d", right)]; !ok {
+		return nil, fmt.Errorf("范围左值 %d 不在可选范围 %v 内", right, valid)
+	}
+	for i := range jc{
+		arr := strings.Split(jc[i], "-")
+		start, end := arr[0], arr[1]
+		s, _ := strconv.ParseInt(start, 10, 64)
+		e, _ := strconv.ParseInt(end, 10, 64)
+		if s >= int64(left) && e <= int64(right){
+			indexes = append(indexes, i)
+		}
+	}
+	return
 }
 
 // 获取jjl所在的位置
