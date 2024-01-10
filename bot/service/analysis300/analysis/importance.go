@@ -92,32 +92,32 @@ var SupportImportance = DataWeight{
 
 // 炮台，丢丢怪
 var PokeImportance = DataWeight{
-	4:  b,        // 补刀
-	6:  a,        // k
-	8:  -a * 1.5, // d
-	10: a,        // a
-	12: c,        // 推塔
-	14: b,        // 插眼
-	16: c,        // 排眼
-	18: b,        // 经济
-	21: a,        // 输出
-	24: c,        // 承伤
-	26: a,        // 转换率
+	4:  b,  // 补刀
+	6:  a,  // k
+	8:  -a, // d
+	10: a,  // a
+	12: c,  // 推塔
+	14: b,  // 插眼
+	16: c,  // 排眼
+	18: b,  // 经济
+	21: a,  // 输出
+	24: c,  // 承伤
+	26: a,  // 转换率
 }
 
 // 核心，泛指红核，需要补刀发育的英雄
 var CarryImportance = DataWeight{
-	4:  a,        // 补刀
-	6:  a,        // k
-	8:  -a * 1.5, // d
-	10: a,        // a
-	12: a,        // 推塔
-	14: c,        // 插眼
-	16: c,        // 排眼
-	18: a,        // 经济
-	21: a,        // 输出
-	24: c,        // 承伤
-	26: a,        // 转换率
+	4:  a,  // 补刀
+	6:  a,  // k
+	8:  -a, // d
+	10: a,  // a
+	12: a,  // 推塔
+	14: c,  // 插眼
+	16: c,  // 排眼
+	18: a,  // 经济
+	21: a,  // 输出
+	24: c,  // 承伤
+	26: a,  // 转换率
 }
 
 var importances = [5]DataWeight{TankImportance, ADImportance, SupportImportance, PokeImportance, CarryImportance}
