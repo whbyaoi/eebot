@@ -53,7 +53,7 @@ func ExportRelatedAnalysis(name string, hero string) (msg string, err error) {
 		matchIdToIndex[allMathes[i].MatchID] = i
 	}
 	marksTran := []string{"单排", "双排", "三黑", "四黑"}
-	msg += "时间 输赢 英雄 k/d/a/补 我方/敌方均分 [开黑] [评价]\n"
+	msg += "时间 输赢 英雄 k/d/a/补 我方/敌方均分 [开黑]\n"
 	for i := range matches {
 		sum1 := 0
 		sum2 := 0
@@ -70,7 +70,7 @@ func ExportRelatedAnalysis(name string, hero string) (msg string, err error) {
 		if plays[i].Result == 1 || plays[i].Result == 3 {
 			result = "赢"
 		}
-		msg += fmt.Sprintf("%s %s %s %d/%d/%d/%d %d/%d [%s] [%s]\n",
+		msg += fmt.Sprintf("%s %s %s %d/%d/%d/%d %d/%d [%s]\n",
 			time.Unix(int64(plays[i].CreateTime), 0).Format(time.DateOnly)[2:],
 			result,
 			db.HeroIDToName[plays[i].HeroID],
@@ -80,8 +80,7 @@ func ExportRelatedAnalysis(name string, hero string) (msg string, err error) {
 			plays[i].KillUnit,
 			sum1,
 			sum2,
-			marksTran[marks[matchIdToIndex[matches[i].MatchID]]],
-			analysis.GetAppraise(plays[i]))
+			marksTran[marks[matchIdToIndex[matches[i].MatchID]]])
 	}
 	return
 }

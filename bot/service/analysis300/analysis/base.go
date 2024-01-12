@@ -462,10 +462,17 @@ func FormatJson(m interface{}, indent bool) string {
 }
 
 func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [14]float64, err error) {
+	// 获取数据
+	slice, all, sorted := GetRank(HeroID, 0)
 	// 获取自己数据
-	players, _ := GetRankFromPlayers(HeroID, 0, []uint64{PlayerID})
-	me, ok := players[PlayerID]
-	if !ok {
+	var me *HeroData
+	for i := range all {
+		if all[i].PlayerID == PlayerID {
+			me = all[i]
+			break
+		}
+	}
+	if me == nil {
 		return selfData, otherData, errors.New("玩家无此数据")
 	}
 	selfData[0] = math.Ceil(me.WinRate*100*100) / 100.0
@@ -484,8 +491,17 @@ func PKAnalysis(PlayerID uint64, HeroID int) (selfData [14]float64, otherData [1
 	selfData[13] = math.Round(me.Score*100) / 100
 
 	// 获取top1数据
-	top, _ := GetRankFromTop(HeroID, 0, 1)
-	top1 := top[0]
+	var top1 *HeroData
+	if len(sorted["Score"]) < 1 {
+		slices.Reverse[[]*HeroData](sorted["Score"])
+		return selfData, otherData, errors.New("数据不足")
+	} else {
+		slices.Reverse[[]*HeroData](sorted["Score"][len(slice)-1:])
+		top1 = sorted["Score"][len(slice)-1]
+	}
+	if top1 == nil {
+		return selfData, otherData, errors.New("无榜一数据")
+	}
 	otherData[0] = math.Ceil(top1.WinRate*100*100) / 100.0
 	otherData[1] = math.Round(top1.AvgUsedTime/60*100) / 100
 	otherData[2] = math.Round(top1.AvgHitPerMinite*100) / 100
