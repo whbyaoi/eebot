@@ -19,12 +19,12 @@ var NoWait = []string{"help", "菜单", "g", "g1", "f", "g2", "win", "top", "top
 
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
-// AnalysisHub
+// AnalysisHub300
 //
 //	rawMessageSlice[0]: 300
 //	rawMessageSlice[1]: 指令缩写
 //	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 竞技力下限)
-func AnalysisHub(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
+func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
 	var svc string
 	var name string
 	if len(rawMessageSlice) > 1 {

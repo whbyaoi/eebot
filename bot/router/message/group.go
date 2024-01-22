@@ -18,11 +18,13 @@ func GroupMessageHub(gm model.GroupMessage) (err error) {
 	case "复读机", "repeat":
 		err = controller.Repeat(gm)
 	case "300":
-		err = controller.AnalysisHub(slices[1:], true, gm.UserID, gm.GroupID)
+		err = controller.AnalysisHub300(slices[1:], true, gm.UserID, gm.GroupID)
+	case "pal", "Pal", "帕鲁", "PAL":
+		err = controller.AnalysisPal(slices[1:], true, gm.UserID, gm.GroupID)
 	default:
 		prefix := fmt.Sprintf("[CQ:at,qq=%d] \n", gm.UserID)
 		msg := "未知服务名：" + action
-		msg += "\n目前支持服务名：300"
+		msg += "\n目前支持服务名：300, pal"
 		service.Reply(msg, prefix, gm.GroupID)
 	}
 	return

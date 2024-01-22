@@ -15,11 +15,10 @@ func PrivateMessageHub(pm model.PrivateMessage) (err error) {
 
 	switch action {
 	case "300":
-		err = controller.AnalysisHub(slices, false, pm.UserID, pm.UserID)
+		err = controller.AnalysisHub300(slices, false, pm.UserID, pm.UserID)
 	default:
 
 	}
 
 	return
 }
-
