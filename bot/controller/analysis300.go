@@ -17,6 +17,8 @@ import (
 
 var NoWait = []string{"help", "菜单", "g", "g1", "f", "g2", "win", "top", "topa", "active", "flush", "", "test"}
 
+var NeedWait = []string{"r", "t", "n", "s", "l", "h", "jjl", "jjl2", "pk"}
+
 var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 
 // AnalysisHub300
@@ -57,7 +59,10 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 	}
 	defer mutexes[strings.Join(rawMessageSlice, "")].Unlock()
 
-	if !slices.Contains[[]string](NoWait, svc) {
+	if slices.Contains[[]string](NeedWait, svc) {
+		if name == "" {
+			return service.Reply("查询角色名为空", prefix, targetID)
+		}
 		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)
 		err = collect.CrawlPlayerByName(name)
 		if err != nil {
