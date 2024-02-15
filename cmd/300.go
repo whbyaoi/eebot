@@ -32,9 +32,10 @@ var Analysis300Cmd = &cobra.Command{
 
 		for {
 			if err := ws.InitWebsocket(); err != nil {
-				continue
+				break
 			}
 			if err := ws.Read(router.WsMessageHandler); err != nil {
+				time.Sleep(time.Minute * 5)
 				continue
 			}
 			ws.WsClient.Close()
