@@ -28,12 +28,12 @@ var mutexes map[string]*sync.Mutex = map[string]*sync.Mutex{}
 //	rawMessageSlice[2:]: 参数(顺序:昵称 英雄名 竞技力下限)
 func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targetID int64) (err error) {
 	var svc string
-	var name string
+	var param string
 	if len(rawMessageSlice) > 1 {
 		svc = rawMessageSlice[1]
 	}
 	if len(rawMessageSlice) > 2 {
-		name = rawMessageSlice[2]
+		param = rawMessageSlice[2]
 	}
 
 	var suffix string
@@ -60,11 +60,11 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 	defer mutexes[strings.Join(rawMessageSlice, "")].Unlock()
 
 	if slices.Contains[[]string](NeedWait, svc) {
-		if name == "" {
+		if param == "" {
 			return service.Reply("查询角色名为空", prefix, targetID)
 		}
 		go service.Reply("别急，查询角色中(第一次查询会较慢)", prefix, targetID)
-		err = collect.CrawlPlayerByName(name)
+		err = collect.CrawlPlayerByName(param)
 		if err != nil {
 			err = service.Reply(err.Error(), prefix, targetID)
 			return
@@ -76,16 +76,16 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 		if len(rawMessageSlice) > 3 {
 			assgin = rawMessageSlice[3]
 		}
-		suffix, err = analysis300.ExportRelatedAnalysis(name, assgin)
+		suffix, err = analysis300.ExportRelatedAnalysis(param, assgin)
 	case "t": // 开黑
-		suffix, err = analysis300.ExportTeamAnalysis(name)
+		suffix, err = analysis300.ExportTeamAnalysis(param)
 	case "n": // 常规
-		suffix, err = analysis300.ExportWinOrLoseAnalysisAdvanced(name)
+		suffix, err = analysis300.ExportWinOrLoseAnalysisAdvanced(param)
 	case "s": // 洗牌
-		suffix, err = analysis300.ExportShuffleAnalysis(name)
+		suffix, err = analysis300.ExportShuffleAnalysis(param)
 	case "as": // 进阶洗牌
 		if HasAuth(sourceID) {
-			suffix, err = analysis300.ExportShuffleAnalysisAdvanced(name)
+			suffix, err = analysis300.ExportShuffleAnalysisAdvanced(param)
 		} else {
 			err = errors.New("无权使用该命令")
 		}
@@ -104,7 +104,7 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 		if assgin == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportAssignHeroAnalysisAdvancedV2(name, assgin, fv)
+			suffix, err = analysis300.ExportAssignHeroAnalysisAdvancedV2(param, assgin, fv)
 		}
 	case "f":
 		var page int64 = 1
@@ -114,25 +114,25 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 				err = errors.New("错误页码")
 			}
 		}
-		suffix, err = analysis300.ExportFindPlayer(name, int(page))
+		suffix, err = analysis300.ExportFindPlayer(param, int(page))
 	case "g", "g1": // 全局英雄
-		if name == "" {
+		if param == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportGlobalHeroAnalysis(name)
+			suffix, err = analysis300.ExportGlobalHeroAnalysis(param)
 		}
 	case "g2":
-		if name == "" {
+		if param == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportGlobalHeroAnalysis2(name)
+			suffix, err = analysis300.ExportGlobalHeroAnalysis2(param)
 		}
 	case "l": // 常用
-		suffix, err = analysis300.ExportLikeAnalysis(name)
+		suffix, err = analysis300.ExportLikeAnalysis(param)
 	case "jjl": // 竞技力
-		suffix, err = analysis300.ExportJJLWithTeamAnalysis(name)
+		suffix, err = analysis300.ExportJJLWithTeamAnalysis(param)
 	case "jjl2":
-		suffix, err = analysis300.ExportJJLCompositionAnalysis(name)
+		suffix, err = analysis300.ExportJJLCompositionAnalysis(param)
 	case "pk":
 		assgin := ""
 		if len(rawMessageSlice) > 3 {
@@ -141,15 +141,20 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 		if assgin == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportPKAnalysis(name, assgin)
+			suffix, err = analysis300.ExportPKAnalysis(param, assgin)
 		}
 	case "active":
-		suffix, err = analysis300.ExportActiveAnalysis()
+		var days int64
+		days, err = strconv.ParseInt(param, 0, 0)
+		if err != nil {
+			days = 7
+		}
+		suffix, err = analysis300.ExportActiveAnalysis(int(days))
 	case "flush":
-		if name == "" {
+		if param == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportFlushTop(name)
+			suffix, err = analysis300.ExportFlushTop(param)
 		}
 	case "top": // top10
 		var fv int
@@ -159,10 +164,10 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 				fv = 0
 			}
 		}
-		if name == "" {
+		if param == "" {
 			err = errors.New("该指令必须包含参数")
 		} else {
-			suffix, err = analysis300.ExportTopAnalysis(name, fv)
+			suffix, err = analysis300.ExportTopAnalysis(param, fv)
 		}
 	case "win":
 		scope := ""
@@ -180,7 +185,7 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 				break
 			}
 		}
-		suffix, err = analysis300.ExportWinRateAnalysis(name, scope)
+		suffix, err = analysis300.ExportWinRateAnalysis(param, scope)
 	case "topa":
 		var fv int
 		if len(rawMessageSlice) > 3 {
@@ -189,27 +194,27 @@ func AnalysisHub300(rawMessageSlice []string, isGroup bool, sourceID int64, targ
 				fv = 0
 			}
 		}
-		if name == "" {
+		if param == "" {
 			err = errors.New("该指令必须指定英雄")
 		} else {
-			suffix, err = analysis300.ExportTopWithDetailAnalysis(name, fv)
+			suffix, err = analysis300.ExportTopWithDetailAnalysis(param, fv)
 		}
 	case "all": // 全部
 		if !HasAuth(sourceID) {
 			err = errors.New("无权使用该指令")
 			break
 		}
-		tmp, err := analysis300.ExportTeamAnalysis(name)
+		tmp, err := analysis300.ExportTeamAnalysis(param)
 		if err != nil {
 			break
 		}
 		suffix += tmp
-		tmp, err = analysis300.ExportWinOrLoseAnalysisAdvanced(name)
+		tmp, err = analysis300.ExportWinOrLoseAnalysisAdvanced(param)
 		if err != nil {
 			break
 		}
 		suffix += tmp
-		tmp, err = analysis300.ExportShuffleAnalysis(name)
+		tmp, err = analysis300.ExportShuffleAnalysis(param)
 		if err != nil {
 			break
 		}

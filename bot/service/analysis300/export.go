@@ -901,9 +901,12 @@ func ExportPKAnalysis(name string, hero string) (msg string, err error) {
 	return fmt.Sprintf("[CQ:image,file=file://%s.png]", abs), nil
 }
 
-func ExportActiveAnalysis() (msg string, err error) {
+func ExportActiveAnalysis(days int) (msg string, err error) {
+	if days <= 0 || days >= 31{
+		return "", errors.New("仅支持30天内的人数查询")
+	}
 	now := time.Now()
-	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(-7 * 24 * 60 * 60 * time.Second)
+	t0 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Add(-time.Duration(days) * 24 * 60 * 60 * time.Second)
 	matches := []db.Match{}
 	db.SqlDB.Model(db.Match{}).Where("create_time > ?", t0.Unix()).Find(&matches)
 	matchIDs := []string{}
@@ -937,7 +940,7 @@ func ExportActiveAnalysis() (msg string, err error) {
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title:    "过去七天活跃玩家数量及分布(仅供参考)",
+			Title:    fmt.Sprintf("过去%d天活跃玩家数量及分布(仅供参考)", days),
 			Subtitle: fmt.Sprintf("玩家总数：%d", len(allPlays)),
 			Top:      "0%",
 			Left:     "10%",
